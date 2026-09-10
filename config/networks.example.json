@@ -1,0 +1,51 @@
+{
+  "$comment": "Example network configuration. Copy/adapt per environment. No secrets.",
+  "local": {
+    "name": "anvil-or-foundry",
+    "cc3ChainId": 31337,
+    "cc3RpcUrl": "http://127.0.0.1:8545",
+    "sourceChainKey": 3,
+    "blockProver": "0x0000000000000000000000000000000000000FD2",
+    "proofBuilderUrl": null,
+    "sourceUsdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "proofMinHeight": 0,
+    "proofMaxHeight": 0,
+    "note": "Local tests mock the precompile. Do not call real 0x0FD2 here."
+  },
+  "cc3-testnet": {
+    "name": "Creditcoin CC3 testnet",
+    "cc3ChainId": 102031,
+    "cc3RpcUrl": "https://rpc.cc3-testnet.creditcoin.network",
+    "cc3Explorer": "https://creditcoin-testnet.blockscout.com",
+    "sourceChainKey": 3,
+    "sourceChainName": "Ethereum mainnet",
+    "sepoliaChainKey": 1,
+    "blockProver": "0x0000000000000000000000000000000000000FD2",
+    "chainInfo": "0x0000000000000000000000000000000000000fd3",
+    "decoder": "0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f",
+    "proofBuilderUrl": "https://proof-gen-api.cc3-testnet.creditcoin.network",
+    "sourceUsdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "proofMinHeight": 0,
+    "proofMaxHeight": 0,
+    "demoSourceTx": "0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787",
+    "notes": [
+      "FACT: chainKeys, precompiles, proof builder URL from docs.attestcoin.org chains/environments (fetched 2026-09-10).",
+      "FACT: CC3 testnet chain id 102031 from docs.creditcoin.org endpoints (fetched 2026-09-10).",
+      "ASSUMPTION: freshness window 0/0 means 'any attested height' for the demo demo historical event. Tighten for production."
+    ]
+  },
+  "cc3-mainnet": {
+    "name": "Creditcoin CC3 mainnet (out of demo scope)",
+    "cc3ChainId": 102030,
+    "sourceChainKey": 1,
+    "sourceChainName": "Ethereum mainnet",
+    "blockProver": "0x0000000000000000000000000000000000000FD2",
+    "chainInfo": "0x0000000000000000000000000000000000000fd3",
+    "decoder": "0x9D094C9f22B10FCf842c2fC6A0981630A4F94B5C",
+    "proofBuilderUrl": "https://proofbuilder.cc3-mainnet-usc.creditcoin.network",
+    "notes": [
+      "FACT: on CC3 mainnet, Ethereum mainnet chainKey is 1, not 3.",
+      "Do not deploy FreezeWire to mainnet for this demo."
+    ]
+  }
+}
