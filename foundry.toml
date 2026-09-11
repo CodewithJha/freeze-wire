@@ -1,0 +1,25 @@
+[profile.default]
+src = "contracts/src"
+test = "contracts/test"
+script = "contracts/script"
+out = "contracts/out"
+libs = ["contracts/lib"]
+cache_path = "contracts/cache"
+solc = "0.8.23"
+optimizer = true
+optimizer_runs = 200
+ffi = false
+fs_permissions = [{ access = "read", path = "./" }]
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+quote_style = "double"
+multiline_func_header = "attributes_first"
+number_underscore = "preserve"
+ignore = ["contracts/lib/**"]
+
+[rpc_endpoints]
+# Named endpoints are filled at runtime from env / config. Do not hard-code RPCs here.
