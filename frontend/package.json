@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "FreezeWire Phase 5 demo workspace — evidence → proof → Creditcoin access",
+  "description": "FreezeWire Phase 5 demo workspace \u2014 evidence \u2192 proof \u2192 Creditcoin access",
   "engines": {
     "node": ">=20"
   },
@@ -25,8 +25,8 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.44.0",
     "motion": "^13.2.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "three": "^0.186.0",
@@ -34,8 +34,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.2",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7.0.2",
