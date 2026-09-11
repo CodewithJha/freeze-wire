@@ -1,0 +1,25 @@
+{
+  "name": "freeze-wire-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "FreezeWire readability worker (Phase 4 HTTP API — not an eligibility authority)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@gluwa/usc-sdk": "^0.18.0",
+    "dotenv": "^17.4.2",
+    "viem": "^2.56.3",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "^7.0.2"
+  }
+}
