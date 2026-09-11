@@ -41,6 +41,9 @@ src/
 |---|---|
 | `VITE_API_BASE_URL` | Worker base URL |
 | `VITE_CC3_CHAIN_ID` | Expected CC3 chain id |
-| `VITE_CC3_RPC_URL` | Public CC3 RPC for simulation |
-| `VITE_CREDIT_LINE_ADDRESS` | Optional live credit line |
-| `VITE_LEDGER_ADDRESS` | Optional ledger (display / future) |
+| `VITE_CC3_RPC_URL` | Public CC3 RPC |
+| `VITE_CREDIT_LINE_ADDRESS` | Live credit line (from `deployments/cc3-testnet.json`) |
+| `VITE_LEDGER_ADDRESS` | Live ledger |
+| `VITE_ALLOW_SIMULATION` | Opt-in `SIMULATION` mode only; default missing addresses → `NOT_DEPLOYED` |
+
+Credit actions report explicit modes: **LIVE** / **NOT_DEPLOYED** / **UNAVAILABLE** / **SIMULATION**. The UI never implies on-chain enforcement when undeployed.

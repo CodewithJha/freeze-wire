@@ -12,8 +12,6 @@ export const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ??
   'http://127.0.0.1:8000';
 
-export const CREDIT_LINE_ADDRESS = (import.meta.env.VITE_CREDIT_LINE_ADDRESS as string | undefined) ?? '';
-export const LEDGER_ADDRESS = (import.meta.env.VITE_LEDGER_ADDRESS as string | undefined) ?? '';
 export const CC3_RPC_URL =
   (import.meta.env.VITE_CC3_RPC_URL as string | undefined) ??
   'https://rpc.cc3-testnet.creditcoin.network';
@@ -21,3 +19,13 @@ export const CC3_RPC_URL =
 export type EligibilityStatus = 'ELIGIBLE' | 'RESTRICTED' | 'UNKNOWN';
 
 export type WireStage = 'ethereum' | 'event' | 'proof' | 'creditcoin' | 'access';
+
+// Credit-line addresses / deployment mode live in `@/lib/deployment` (not hardcoded here).
+export {
+  CREDIT_LINE_ADDRESS,
+  LEDGER_ADDRESS,
+  ALLOW_SIMULATION,
+  addressesConfigured,
+  resolveDeploymentMode,
+  type DeploymentMode,
+} from '../deployment';

@@ -86,13 +86,13 @@ export function CreditAccessMatrix({
   busyAction,
   lastResult,
   onAction,
-  creditConfigured,
+  deploymentMode,
 }: {
   status: EligibilityStatus;
   busyAction: CreditActionId | null;
   lastResult: string | null;
   onAction: (id: CreditActionId) => void;
-  creditConfigured: boolean;
+  deploymentMode: 'LIVE' | 'NOT_DEPLOYED' | 'UNAVAILABLE' | 'SIMULATION';
 }) {
   return (
     <section aria-label="Credit access policy">
@@ -103,11 +103,20 @@ export function CreditAccessMatrix({
             Selective gating — contract is authoritative; UI is not.
           </p>
         </div>
-        {!creditConfigured ? (
-          <p className="text-[0.6875rem] text-fw-signal">
-            CREDIT_LINE_ADDRESS unset — simulate path only
-          </p>
-        ) : null}
+        <p
+          className={
+            deploymentMode === 'LIVE'
+              ? 'text-[0.6875rem] text-fw-eligible'
+              : 'text-[0.6875rem] text-fw-signal'
+          }
+        >
+          {deploymentMode === 'LIVE' && 'LIVE — chain-backed GatedCreditLine'}
+          {deploymentMode === 'NOT_DEPLOYED' &&
+            'NOT_DEPLOYED — set VITE_CREDIT_LINE_ADDRESS + VITE_LEDGER_ADDRESS after CC3 deploy'}
+          {deploymentMode === 'UNAVAILABLE' && 'UNAVAILABLE — addresses set but CC3 RPC failed'}
+          {deploymentMode === 'SIMULATION' &&
+            'SIMULATION — VITE_ALLOW_SIMULATION=1 (not on-chain enforcement)'}
+        </p>
       </div>
 
       <div className="border-t border-fw-line">

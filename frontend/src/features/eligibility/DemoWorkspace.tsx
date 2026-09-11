@@ -34,8 +34,8 @@ import { useHealth } from '@/hooks/useHealth';
 import {
   attemptCreditAction,
   connectWallet,
-  creditLineConfigured,
 } from '@/features/credit-line/actions';
+import { resolveDeploymentMode } from '@/lib/deployment';
 
 type CalldataPayload = { to: string; data: string } | null;
 
@@ -389,7 +389,7 @@ export function DemoWorkspace() {
               busyAction={busyAction}
               lastResult={actionResult}
               onAction={(id) => void onCreditAction(id)}
-              creditConfigured={creditLineConfigured()}
+              deploymentMode={resolveDeploymentMode()}
             />
           </div>
 

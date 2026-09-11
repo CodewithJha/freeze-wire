@@ -12,18 +12,19 @@ export function AccessConsequence({
   busyAction,
   lastResult,
   onAction,
-  creditConfigured,
+  deploymentMode,
 }: {
   status: EligibilityStatus;
   statusSource: 'chain' | 'unknown' | null;
   busyAction: CreditActionId | null;
   lastResult: string | null;
   onAction: (id: CreditActionId) => void;
-  creditConfigured: boolean;
+  deploymentMode: 'LIVE' | 'NOT_DEPLOYED' | 'UNAVAILABLE' | 'SIMULATION';
 }) {
   const reduceMotion = useReducedMotion();
-  const restricted = status === 'RESTRICTED' && statusSource === 'chain';
-  const eligible = status === 'ELIGIBLE' && statusSource === 'chain';
+  const chainBacked = deploymentMode === 'LIVE' && statusSource === 'chain';
+  const restricted = status === 'RESTRICTED' && chainBacked;
+  const eligible = status === 'ELIGIBLE' && chainBacked;
   const unsettled = !restricted && !eligible;
 
   return (
@@ -67,7 +68,13 @@ export function AccessConsequence({
               ? 'Ledger-established boundary. Draw, transfer, and escrow paths that require ELIGIBLE are blocked. Exit paths remain available.'
               : eligible
                 ? 'Ledger-established clearance for gated credit operations.'
-                : 'Creditcoin has not established a ledger state for this address.'}
+                : deploymentMode === 'NOT_DEPLOYED'
+                  ? 'Contracts are not deployed on CC3 yet — no on-chain eligibility or credit gating.'
+                  : deploymentMode === 'SIMULATION'
+                    ? 'Simulation mode only. Not a Creditcoin state change.'
+                    : deploymentMode === 'UNAVAILABLE'
+                      ? 'Deployment addresses are set but chain reads are unavailable.'
+                      : 'Creditcoin has not established a ledger state for this address.'}
           </p>
         </motion.div>
 
@@ -77,7 +84,7 @@ export function AccessConsequence({
             busyAction={busyAction}
             lastResult={lastResult}
             onAction={onAction}
-            creditConfigured={creditConfigured}
+            deploymentMode={deploymentMode}
           />
         </div>
       </div>

@@ -7,7 +7,14 @@ import {
   type Hex,
 } from 'viem';
 import { gatedCreditLineAbi } from '@/lib/abis';
-import { CC3_CHAIN_ID, CC3_RPC_URL, CREDIT_LINE_ADDRESS } from '@/lib/constants';
+import { CC3_CHAIN_ID } from '@/lib/constants';
+import {
+  addressesConfigured,
+  CREDIT_LINE_ADDRESS,
+  CC3_RPC_URL,
+  resolveDeploymentMode,
+  type DeploymentMode,
+} from '@/lib/deployment';
 import type { CreditActionId } from '@/components/credit/CreditAccessMatrix';
 
 const creditcoinTestnet = {
@@ -23,16 +30,25 @@ function getEthereum(): { request: (args: { method: string; params?: unknown[] }
   return eth as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
 }
 
+/** @deprecated Prefer resolveDeploymentMode / addressesConfigured */
 export function creditLineConfigured(): boolean {
-  return /^0x[0-9a-fA-F]{40}$/.test(CREDIT_LINE_ADDRESS);
+  return addressesConfigured();
+}
+
+export function deploymentMode(): DeploymentMode {
+  return resolveDeploymentMode();
 }
 
 export async function attemptCreditAction(
   action: CreditActionId,
   account: Address,
 ): Promise<string> {
-  if (!creditLineConfigured()) {
-    return mapSimulated(action);
+  const mode = resolveDeploymentMode();
+  if (mode === 'NOT_DEPLOYED') {
+    return `NOT_DEPLOYED — no VITE_CREDIT_LINE_ADDRESS / VITE_LEDGER_ADDRESS; on-chain enforcement is not active.`;
+  }
+  if (mode === 'SIMULATION') {
+    return mapSimulation(action);
   }
 
   const address = CREDIT_LINE_ADDRESS as Address;
@@ -107,12 +123,15 @@ export async function attemptCreditAction(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (/Restricted/i.test(msg)) {
-      return `CONTRACT REVERT Restricted — ${action.toUpperCase()} rejected by GatedCreditLine.`;
+      return `LIVE REVERT Restricted — ${action.toUpperCase()} rejected by GatedCreditLine.`;
     }
     if (/InsufficientAvailable/i.test(msg)) {
-      return `CONTRACT REVERT InsufficientAvailable — ${action.toUpperCase()} (balances, not eligibility).`;
+      return `LIVE REVERT InsufficientAvailable — ${action.toUpperCase()} (balances, not eligibility).`;
     }
-    return `CONTRACT CALL FAILED — ${shortErr(msg)}`;
+    if (/fetch|HTTP|network|timeout|ECONNREFUSED|RPC/i.test(msg)) {
+      return `UNAVAILABLE — CC3 RPC failed for ${action.toUpperCase()}: ${shortErr(msg)}`;
+    }
+    return `LIVE CALL FAILED — ${shortErr(msg)}`;
   }
 }
 
@@ -124,7 +143,7 @@ async function writeIfWallet(
 ): Promise<string> {
   const eth = getEthereum();
   if (!eth) {
-    return `SIMULATION OK — connect a wallet to broadcast ${functionName}.`;
+    return `LIVE SIMULATION OK — connect a wallet to broadcast ${functionName} on CC3.`;
   }
   const wallet = createWalletClient({
     account,
@@ -139,19 +158,19 @@ async function writeIfWallet(
     account,
     chain: creditcoinTestnet,
   });
-  return `TX SUBMITTED ${hash}`;
+  return `LIVE TX SUBMITTED ${hash}`;
 }
 
-function mapSimulated(action: CreditActionId): string {
+function mapSimulation(action: CreditActionId): string {
   const gated =
     action === 'draw' ||
     action === 'protectedTransfer' ||
     action === 'escrowLock' ||
     action === 'escrowRelease';
   if (gated) {
-    return `CREDIT LINE UNCONFIGURED — UI marks gated actions blocked when RESTRICTED; configure VITE_CREDIT_LINE_ADDRESS for live Restricted revert.`;
+    return `SIMULATION — gated ${action.toUpperCase()} shown blocked under RESTRICTED (not on-chain).`;
   }
-  return `CREDIT LINE UNCONFIGURED — ${action.toUpperCase()} remains available under selective gating (ledger still authoritative).`;
+  return `SIMULATION — ${action.toUpperCase()} remains available under selective gating (not on-chain).`;
 }
 
 function shortErr(msg: string): string {

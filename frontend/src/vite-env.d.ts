@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_CC3_EXPLORER_URL?: string;
   readonly VITE_CREDIT_LINE_ADDRESS?: string;
   readonly VITE_LEDGER_ADDRESS?: string;
+  /** Opt-in UI simulation only. Without this, missing addresses are NOT_DEPLOYED. */
+  readonly VITE_ALLOW_SIMULATION?: string;
 }
 
 interface ImportMeta {
