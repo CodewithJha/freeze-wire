@@ -293,8 +293,8 @@ API surface: [`docs/API_SPECIFICATION.md`](docs/API_SPECIFICATION.md). Decisions
 | Worker HTTP API + unit tests | Implemented |
 | Frontend demo workspace | Implemented |
 | Live Proof Builder prove path | Optionally live-tested (`LIVE_ATTESTCOIN=1`) |
-| CC3 deployment of verifier / ledger / credit line | **Not claimed** — needs funded deployer (Phase 8) |
-| On-chain `Restricted` demo tx on Creditcoin | **Deployment-dependent** |
+| CC3 deployment of verifier / ledger / credit line | **Script ready** — live broadcast blocked until funded `DEPLOYER_PRIVATE_KEY` (see `docs/DEPLOYMENT_PLAN.md`) |
+| On-chain `Restricted` demo tx on Creditcoin | **Deployment-dependent** (`scripts/submit-demo-proof.mjs`) |
 | Server-side `POST /v1/relay` broadcast | Needs `LEDGER_ADDRESS` + `RELAY_PRIVATE_KEY` (else calldata for a wallet) |
 | CC3 mainnet / writability / Credal | Out of scope for this submission |
 

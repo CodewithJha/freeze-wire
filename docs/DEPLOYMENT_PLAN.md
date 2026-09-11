@@ -4,6 +4,37 @@
 
 ---
 
+## Live CC3 Testnet Deployment
+
+**Status (honest):** Live broadcast requires a funded `DEPLOYER_PRIVATE_KEY` with tCTC on chain id **102031**. Until that key is set, contracts are **not** claimed deployed on Creditcoin.
+
+### Runbook
+
+1. `./scripts/smoke-cc3.sh` — confirms `eth_chainId == 102031`, probes `0x0FD2` via `calculateTxIndex` (precompile has empty `eth_getCode`), Proof Builder health.
+2. Fund deployer via Creditcoin testnet faucet; set `DEPLOYER_PRIVATE_KEY` in `.env` (never commit).
+3. `./scripts/deploy-cc3-testnet.sh` — deploys MockUSD → BlacklistVerifier → EligibilityLedger → GatedCreditLine; writes gitignored `deployments/cc3-testnet.json`.
+4. `node scripts/sync-deployment-env.mjs` — copies public addresses into `.env` / `frontend/.env.local`.
+5. `node scripts/submit-demo-proof.mjs` — Proof Builder for demo tx `0xc9edfdbb…` then permissionless `submitProof`; expects `statusOf(0xe05F…) == RESTRICTED`.
+6. Fund MockUSD / deposit; protected `draw` must revert `Restricted`; repay / withdraw unused remain available.
+
+### Verified public artifacts
+
+Fill only after a successful live run (no secrets):
+
+| Field | Value |
+|---|---|
+| chainId | 102031 |
+| demo source tx | `0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787` |
+| MockUSD | _(pending deploy)_ |
+| BlacklistVerifier | _(pending deploy)_ |
+| EligibilityLedger | _(pending deploy)_ |
+| GatedCreditLine | _(pending deploy)_ |
+| submitProof tx | _(pending)_ |
+
+Canonical USDC emitter remains immutable Circle USDC `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`. Attestcoin native verifier `0x0FD2`, chainKey **3**.
+
+---
+
 ## Environments
 
 | Name | Chain id | RPC | Explorer | chainKey ETH mainnet |
@@ -84,7 +115,7 @@ A wrong `expectedEmitter` cannot be patched in place (immutable). Redeploy with 
 
 ```text
 1. eth_chainId == 102031
-2. code at 0x0FD2 nonempty
+2. 0x0FD2 responds to calculateTxIndex (eth_getCode is empty for precompiles)
 3. Proof Builder /api/v1/health
 4. forge script --broadcast (or documented failure)
 5. statusOf(0xe05F…) after proof == RESTRICTED
