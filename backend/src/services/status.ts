@@ -15,6 +15,14 @@ export type HealthResponse = {
   proofBuilder: { ok: boolean; raw: object | null };
   chainId: number;
   expectedChainKey: number;
+  deployment: {
+    configured: boolean;
+    network: string | null;
+    verifier: string | null;
+    ledger: string | null;
+    creditLine: string | null;
+    mockUsd: string | null;
+  };
 };
 
 export async function checkHealth(options: {
@@ -65,6 +73,14 @@ export async function checkHealth(options: {
     proofBuilder,
     chainId,
     expectedChainKey: config.attestcoinChainKey,
+    deployment: {
+      configured: Boolean(config.ledgerAddress && config.creditLineAddress && config.verifierAddress),
+      network: config.deploymentRegistry?.network ?? null,
+      verifier: config.verifierAddress ?? null,
+      ledger: config.ledgerAddress ?? null,
+      creditLine: config.creditLineAddress ?? null,
+      mockUsd: config.mockUsdAddress ?? null,
+    },
   };
 }
 

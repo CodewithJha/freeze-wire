@@ -13,6 +13,7 @@ secrets/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+broadcast/
 # lib/forge-std is tracked (copied, not a nested git submodule)
 contracts/lib/**/.git/
 
@@ -51,3 +52,8 @@ frontend/.qa-artifacts/
 
 # Editor / OS debris already covered above; keep broadcast secrets out of tree
 contracts/broadcast/**/run-latest.json
+
+# Live deployment registries (public addresses, still environment-specific)
+deployments/*.json
+!deployments/*.example.json
+!deployments/cc3-testnet.example.json

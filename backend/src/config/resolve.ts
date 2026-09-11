@@ -1,5 +1,6 @@
 import type { WorkerEnv } from './env.js';
 import type { NetworkProfile, NetworksFile } from './networks.js';
+import { loadDeploymentRegistry, type DeploymentRegistry } from './deploymentRegistry.js';
 
 export type AppConfig = {
   fwEnv: string;
@@ -17,6 +18,7 @@ export type AppConfig = {
   verifierAddress: `0x${string}` | undefined;
   ledgerAddress: `0x${string}` | undefined;
   creditLineAddress: `0x${string}` | undefined;
+  mockUsdAddress: `0x${string}` | undefined;
   relayPrivateKey: `0x${string}` | undefined;
   relayGate: string | undefined;
   demoSourceTx: `0x${string}`;
@@ -25,6 +27,7 @@ export type AppConfig = {
   gasLimitMultiplier: number;
   rateLimitPerMin: number;
   profile: NetworkProfile;
+  deploymentRegistry: DeploymentRegistry | undefined;
 };
 
 function pickAddress(
@@ -68,9 +71,13 @@ export function resolveAppConfig(env: WorkerEnv, networks: NetworksFile): AppCon
     throw new Error('ATTESTCOIN_CHAIN_KEY (or networks sourceChainKey) is required');
   }
 
-  const sourceUsdc = (env.SOURCE_USDC_ADDRESS ?? profile.sourceUsdc)?.toLowerCase() as
-    | `0x${string}`
-    | undefined;
+  const registry = loadDeploymentRegistry();
+
+  const sourceUsdc = (
+    env.SOURCE_USDC_ADDRESS ??
+    registry?.sourceUsdc ??
+    profile.sourceUsdc
+  )?.toLowerCase() as `0x${string}` | undefined;
   if (!sourceUsdc) {
     throw new Error('SOURCE_USDC_ADDRESS (or networks sourceUsdc) is required');
   }
@@ -86,6 +93,20 @@ export function resolveAppConfig(env: WorkerEnv, networks: NetworksFile): AppCon
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // Env wins; registry fills gaps after a CC3 deploy without requiring filled .env.example.
+  const verifierAddress =
+    pickAddress(env.VERIFIER_ADDRESS, env.BLACKLIST_VERIFIER_ADDRESS) ??
+    (registry?.addresses.blacklistVerifier.toLowerCase() as `0x${string}` | undefined);
+  const ledgerAddress =
+    pickAddress(env.LEDGER_ADDRESS, env.ELIGIBILITY_LEDGER_ADDRESS) ??
+    (registry?.addresses.eligibilityLedger.toLowerCase() as `0x${string}` | undefined);
+  const creditLineAddress =
+    pickAddress(env.CREDIT_LINE_ADDRESS, env.GATED_CREDIT_LINE_ADDRESS) ??
+    (registry?.addresses.gatedCreditLine.toLowerCase() as `0x${string}` | undefined);
+  const mockUsdAddress =
+    (env.MOCK_USD_ADDRESS?.toLowerCase() as `0x${string}` | undefined) ??
+    (registry?.addresses.mockUsd.toLowerCase() as `0x${string}` | undefined);
+
   return {
     fwEnv: env.FW_ENV ?? 'local',
     host: env.WORKER_HOST ?? '127.0.0.1',
@@ -93,15 +114,16 @@ export function resolveAppConfig(env: WorkerEnv, networks: NetworksFile): AppCon
     logLevel: env.LOG_LEVEL ?? 'info',
     corsOrigins,
     cc3RpcUrl,
-    cc3ChainId,
+    cc3ChainId: env.CC3_CHAIN_ID ?? registry?.chainId ?? cc3ChainId,
     ethRpcUrl: env.ETH_RPC_URL,
     proofBuilderUrl,
     proofBuilderApiKey: env.PROOF_BUILDER_API_KEY,
-    attestcoinChainKey,
+    attestcoinChainKey: env.ATTESTCOIN_CHAIN_KEY ?? registry?.attestcoinChainKey ?? attestcoinChainKey,
     sourceUsdc,
-    verifierAddress: pickAddress(env.VERIFIER_ADDRESS, env.BLACKLIST_VERIFIER_ADDRESS),
-    ledgerAddress: pickAddress(env.LEDGER_ADDRESS, env.ELIGIBILITY_LEDGER_ADDRESS),
-    creditLineAddress: pickAddress(env.CREDIT_LINE_ADDRESS, env.GATED_CREDIT_LINE_ADDRESS),
+    verifierAddress,
+    ledgerAddress,
+    creditLineAddress,
+    mockUsdAddress,
     relayPrivateKey: normalizeKey(env.RELAY_PRIVATE_KEY),
     relayGate: env.RELAY_GATE,
     demoSourceTx,
@@ -111,5 +133,6 @@ export function resolveAppConfig(env: WorkerEnv, networks: NetworksFile): AppCon
     gasLimitMultiplier: env.GAS_LIMIT_MULTIPLIER ?? 1.2,
     rateLimitPerMin: env.RATE_LIMIT_PER_MIN ?? 30,
     profile,
+    deploymentRegistry: registry,
   };
 }

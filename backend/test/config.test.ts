@@ -55,5 +55,12 @@ describe('Phase 1 config foundation', () => {
     assert.equal(cfg.verifierAddress, '0x3333333333333333333333333333333333333333');
     assert.equal(cfg.creditLineAddress, '0x4444444444444444444444444444444444444444');
     assert.equal(cfg.relayPrivateKey, undefined);
+    assert.equal(cfg.deploymentRegistry, undefined);
+  });
+
+  it('loadDeploymentRegistry returns undefined when file absent', async () => {
+    const { loadDeploymentRegistry } = await import('../src/config/deploymentRegistry.js');
+    const missing = loadDeploymentRegistry('/tmp/freeze-wire-missing-registry.json');
+    assert.equal(missing, undefined);
   });
 });

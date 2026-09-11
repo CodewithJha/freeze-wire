@@ -1,0 +1,18 @@
+{
+  "network": "cc3-testnet",
+  "chainId": 102031,
+  "deployBlock": 0,
+  "timestamp": 0,
+  "attestcoinChainKey": 3,
+  "proofMinHeight": 0,
+  "proofMaxHeight": 0,
+  "ltvBps": 5000,
+  "sourceUsdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  "blockProver": "0x0000000000000000000000000000000000000FD2",
+  "addresses": {
+    "mockUsd": "0x0000000000000000000000000000000000000000",
+    "blacklistVerifier": "0x0000000000000000000000000000000000000000",
+    "eligibilityLedger": "0x0000000000000000000000000000000000000000",
+    "gatedCreditLine": "0x0000000000000000000000000000000000000000"
+  }
+}

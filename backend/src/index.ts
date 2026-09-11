@@ -34,6 +34,7 @@ export function boot(options?: { environ?: NodeJS.ProcessEnv; startServer?: bool
     chainKey: config.attestcoinChainKey,
     relayEnabled: Boolean(config.relayPrivateKey),
     ledgerConfigured: Boolean(config.ledgerAddress),
+    deploymentRegistry: Boolean(config.deploymentRegistry),
   });
 
   const server = createWorkerServer({ config, log });
