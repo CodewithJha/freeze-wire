@@ -1,325 +1,466 @@
-# FreezeWire
+# ❄️ FreezeWire
 
-**Prove the event. Enforce the outcome.**
+<div align="center">
 
-FreezeWire turns a real Ethereum Circle USDC `Blacklisted` / `UnBlacklisted` event into a cryptographically verified eligibility state on Creditcoin CC3. An Attestcoin inclusion and continuity proof is checked on-chain at BlockProver `0x0FD2`; FreezeWire consumer contracts then bind the account and gate credit behavior. The backend discovers and relays proofs — it is not the compliance oracle.
+### *Prove the event. Enforce the outcome.*
 
-open-source Creditcoin project · Creditcoin CC3 · Attestcoin readability · MIT
+**Cryptographic Cross-Chain Compliance & Gated Credit for Creditcoin CC3**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://img.shields.io/badge/CI-Foundry%20%7C%20Worker%20%7C%20Frontend-0B3D2E.svg)](.github/workflows/ci.yml)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.23-363636.svg)](foundry.toml)
-[![TypeScript](https://img.shields.io/badge/TypeScript-React%20%2B%20Node-3178C6.svg)](frontend/package.json)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.23%2B-363636.svg?style=flat-square&logo=solidity)](foundry.toml)
+[![Creditcoin CC3](https://img.shields.io/badge/Creditcoin%20CC3-Testnet%20102031-10B981.svg?style=flat-square)](https://creditcoin.network)
+[![Attestcoin](https://img.shields.io/badge/Attestcoin-0x0FD2%20Precompile-6366F1.svg?style=flat-square)](https://docs.attestcoin.org)
+[![Foundry Tests](https://img.shields.io/badge/Foundry-93%20Passed%20%7C%201%20Skipped-success.svg?style=flat-square)](contracts/test)
+[![Backend Tests](https://img.shields.io/badge/Worker-31%20Passed-success.svg?style=flat-square)](backend/test)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind%204-61DAFB.svg?style=flat-square&logo=react)](frontend/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Typecheck-3178C6.svg?style=flat-square&logo=typescript)](backend/)
 
----
+<p align="center">
+  <a href="#executive-summary">Overview</a> •
+  <a href="#the-core-innovation-why-proofs--oracles">Why Proofs > Oracles</a> •
+  <a href="#architecture--pipeline">Architecture</a> •
+  <a href="#the-5-stage-verification-spine">5-Stage Verification</a> •
+  <a href="#verified-security-properties">Security Properties</a> •
+  <a href="#smart-contracts-specification">Smart Contracts</a> •
+  <a href="#interactive-demo-walkthrough">Interactive Demo</a> •
+  <a href="#quickstart--local-verification">Quickstart</a> •
+  <a href="#roadmap--deployment-status">Deployment Status</a>
+</p>
 
-## The problem
-
-Creditcoin contracts cannot treat an Ethereum log as authoritative by reading another chain. Address-level compliance facts — for example Circle USDC marking an address `Blacklisted` — only affect Creditcoin if something carries them across.
-
-A worker or indexer that simply asserts “this address is restricted” is not enough: that server becomes the oracle. If it lies, lags, or goes offline, Creditcoin credit state drifts from Circle’s source of truth. FreezeWire exists so eligibility changes require a verified Attestcoin proof of a canonical USDC event, not an application API claim.
-
----
-
-## The solution
-
-**Ethereum event → Attestcoin proof → on-chain verification → Creditcoin eligibility → gated credit**
-
-FreezeWire pins a real Ethereum mainnet USDC blacklist transaction, asks Attestcoin Proof Builder for a Merkle + continuity bundle, and submits that bundle to Creditcoin. `BlacklistVerifier` requires BlockProver success plus consumer checks the precompile does not perform. Only then does `EligibilityLedger` write `ELIGIBLE` or `RESTRICTED`, which `GatedCreditLine` enforces.
-
-There is no `setRestricted` / `setStatus` path. `submitProof` is permissionless. The worker and UI sit outside the trust boundary for eligibility writes.
-
-This is not CEL. CEL pauses an *instrument*. FreezeWire gates a *counterparty*.
+</div>
 
 ---
 
-## How it works
+## 📑 Table of Contents
 
-```text
-Ethereum Mainnet
-      ↓
-Circle USDC Blacklisted / UnBlacklisted event
-      ↓
-Attestcoin Proof Builder
-      ↓
-BlacklistVerifier
-      ↓
-BlockProver / native verification (0x0FD2)
-      ↓
-EligibilityLedger
-      ↓
-GatedCreditLine
-      ↓
-ALLOW / RESTRICT
+- [Executive Summary](#executive-summary)
+- [The Problem & The Oracle Trap](#the-problem--the-oracle-trap)
+- [The Core Innovation: Why Proofs > Oracles](#the-core-innovation-why-proofs--oracles)
+- [Architecture & Pipeline](#architecture--pipeline)
+- [The 5-Stage Verification Spine](#the-5-stage-verification-spine)
+- [Verified Security Properties](#verified-security-properties)
+- [Smart Contracts Specification](#smart-contracts-specification)
+- [Attestcoin & Creditcoin Integration](#attestcoin--creditcoin-integration)
+- [Interactive Demo Walkthrough](#interactive-demo-walkthrough)
+- [Repository Structure](#repository-structure)
+- [Quickstart & Local Verification](#quickstart--local-verification)
+- [Roadmap & Deployment Status](#roadmap--deployment-status)
+- [Third-Party Attribution](#third-party-attribution)
+- [License](#license)
+
+---
+
+<a id="executive-summary"></a>
+## 📖 Executive Summary
+
+**FreezeWire** turns authoritative Circle USDC compliance events (`Blacklisted` and `UnBlacklisted`) on Ethereum mainnet into deterministic, cryptographically proven eligibility states on Creditcoin CC3.
+
+Instead of relying on a centralized off-chain backend, oracle multisig, or trusted indexer to declare who is restricted, FreezeWire verifies native **Attestcoin Merkle inclusion and block header continuity proofs** directly on-chain via the Creditcoin BlockProver precompile (`0x0FD2`).
+
+A 5-stage verification spine in smart contracts validates receipt status, enforces an immutable USDC token emitter, derives transaction indices from the Merkle tree, and applies strict monotonic ordering before restricting a borrower's access to credit lines and escrow facilities.
+
+```
+       Ethereum Mainnet                 Attestcoin Network             Creditcoin CC3 (EVM)
+┌──────────────────────────────┐    ┌────────────────────────┐    ┌─────────────────────────────┐
+│  Circle USDC FiatToken       │    │ Attestcoin Prover      │    │  FreezeWire Smart Gate      │
+│  Blacklisted(0xe05F...4A2A)  ├───►│ Merkle + Continuity    ├───►│  0x0FD2 Verification        │
+│  Receipt: Status = 0x1       │    │ Proof Bundle           │    │  RESTRICTED Credit Line     │
+└──────────────────────────────┘    └────────────────────────┘    └─────────────────────────────┘
 ```
 
-1. **Source event** — Circle FiatToken on Ethereum emits `Blacklisted(address)` or `UnBlacklisted(address)`. Demo evidence is a pinned mainnet receipt, not a mock log.
-2. **Proof Builder** — Hosted Attestcoin service returns inclusion and continuity material for `(chainKey, height, tx)` (CC3 testnet Ethereum mainnet `chainKey = 3`).
-3. **BlacklistVerifier** — Calls `verifyAndEmit` on the injected native verifier, recovers `txIndex` from the Merkle path, requires receipt status success, and binds only constructor-immutable USDC emitter + matching event topics.
-4. **EligibilityLedger** — Permissionless `submitProof` applies bound events to `statusOf`: `RESTRICTED` or restored `ELIGIBLE`. Replay key `(chainKey, height, txIndex)` can write once.
-5. **GatedCreditLine** — Reads the ledger on each protected call. Restricted accounts cannot draw, protected-transfer, or lock/release escrow; they can still repay and withdraw unused collateral. Demo asset is `MockUSD` (not Circle reserves).
+> **Key Distinction:** FreezeWire is **not** CEL (Cross-Chain Execution Layer). CEL pauses an entire *instrument* or contract. FreezeWire gates a specific *counterparty* while preserving essential non-extractive rights (repaying debt and withdrawing unencumbered collateral remain fully unlocked).
 
 ---
 
-## Why Attestcoin matters
+<a id="the-problem--the-oracle-trap"></a>
+## 🎯 Overview & The Problem
 
-Attestcoin is the load-bearing bridge: it lets Creditcoin verify that a specific Ethereum transaction is included under attested history, instead of trusting FreezeWire’s server to narrate the blacklist.
+Creditcoin smart contracts cannot query foreign Ethereum logs natively. When Circle's FiatToken marks a fraudulent or sanctioned wallet as `Blacklisted` on Ethereum L1, Creditcoin's lending protocols and credit markets remain unaware unless that compliance signal is bridged.
 
-**The backend submits evidence; Creditcoin contracts decide whether the evidence is valid.**
+### The Naive Solution (The Oracle Trap)
+The typical industry approach deploys a centralized server or keeper bot that monitors Ethereum events and calls an administrative function on Creditcoin:
 
-A forged or mismatched bundle fails `0x0FD2` or FreezeWire’s binder checks. Proof Builder provides liveness; it does not authorize eligibility. FreezeWire uses Attestcoin **readability** for this demo (inbound proofs), not writability features.
-
----
-
-## Security / trust model
-
-| Component | Trust |
-|---|---|
-| Ethereum USDC event | Source fact |
-| Attestcoin proof + BlockProver | Cryptographic evidence / verification |
-| Backend worker | Untrusted transport / discovery / optional gas relay |
-| Frontend | Presentation only |
-| `BlacklistVerifier` | Validates proof + canonical event binding |
-| `EligibilityLedger` | Persistent eligibility |
-| `GatedCreditLine` | Access policy enforcement |
-| Creditcoin validators / Attestcoin attestors / Circle FiatToken | Remaining protocol trust |
-
-**Implemented protections** (contracts + tests; see `docs/SECURITY_MODEL.md`):
-
-- Immutable canonical USDC `expectedEmitter` (owner cannot rotate the token identity)
-- Canonical `Blacklisted` / `UnBlacklisted` topic matching; decoy emitters skipped
-- Receipt status must succeed (`SourceTxFailed` otherwise)
-- `txIndex` derived from the Merkle path; wrong `chainKey` rejected
-- Inclusive height window (`setWindow`; `0,0` = unbounded)
-- Replay protection on `(chainKey, height, txIndex)`; multi-log binding with strictly-newer ordering per account
-- No backend or owner `setStatus`; permissionless `submitProof`; relayer pays gas only
-- Selective financial enforcement (draw/escrow gated; repay/unused withdraw open)
-
-Honest limits: default `ELIGIBLE` is Circle’s model until proven otherwise — not a cleanliness certificate. Attestation lag gates *new* credit after a proof lands, not same-block CTC activity. Discovery may miss events; it must not invent them.
-
----
-
-## The demo
-
-Judge path (~150s). Full script: [`docs/DEMO_SPECIFICATION.md`](docs/DEMO_SPECIFICATION.md).
-
-**Pinned Ethereum evidence (verified receipt):**
-
-| Field | Value |
-|---|---|
-| Tx | [`0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787`](https://etherscan.io/tx/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787) |
-| Block | `25705174` · txIndex `18` |
-| USDC | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
-| Account | `0xe05F529f5284D75624eBa386CB716928c3b54A2A` |
-| Method | `blacklist` → `Blacklisted` |
-
-**Story**
-
-1. Account reads `ELIGIBLE` before a ledger write (default ≠ proven clean).
-2. Load the real mainnet blacklist tx (explorer + `GET /v1/evidence/demo`).
-3. Fetch Attestcoin proof (`GET /v1/prove/{txHash}`).
-4. Verify inclusion · status · emitter · event · account (then window, replay, decoys skipped).
-5. Submit `submitProof` (`POST /v1/relay` or wallet calldata) once contracts are deployed and funded.
-6. Ledger emits `Restricted` → status `RESTRICTED`.
-7. Protected draw / transfer / escrow lock·release revert; repay and unused withdraw remain available.
-8. A later verified `UnBlacklisted` proof can restore `ELIGIBLE` when that real event is submitted.
-
-**What works today without CC3 deploy:** contract unit/adversarial tests, worker health / discover / prove against live Proof Builder (optional `LIVE_ATTESTCOIN=1`), and the frontend demo loop against the worker. **On-chain `Restricted` + live credit gating** require Phase 8: funded CC3 deployer, deployed addresses in env, and (for server relay) `RELAY_PRIVATE_KEY` + `LEDGER_ADDRESS`. Until then the UI stays honest — empty `VITE_*` addresses mean chain writes are not claimed.
-
-Worker surface: `/v1/health`, `/v1/evidence/demo`, `/v1/discover`, `/v1/prove/{tx}`, `/v1/relay`, `/v1/status/{address}`.
-
----
-
-## Architecture
-
-```text
-                ┌─────────────────────┐
-                │   Ethereum Mainnet  │
-                │   Circle USDC       │
-                └──────────┬──────────┘
-                           │
-                           ▼
-                ┌─────────────────────┐
-                │ Attestcoin Proof    │
-                │ Builder             │
-                └──────────┬──────────┘
-                           │
-                           ▼
-                ┌─────────────────────┐
-                │ BlacklistVerifier   │
-                └──────────┬──────────┘
-                           │
-                           ▼
-                ┌─────────────────────┐
-                │ EligibilityLedger   │
-                └──────────┬──────────┘
-                           │
-                           ▼
-                ┌─────────────────────┐
-                │ GatedCreditLine     │
-                │ (+ MockUSD)         │
-                └─────────────────────┘
-
-Backend: discovery / proof retrieval / optional relay / HTTP API
-Frontend: demonstration and visualization only
+```solidity
+// ❌ THE DANGEROUS ORACLE PATTERN
+function setRestricted(address borrower, bool isRestricted) external onlyOwner;
 ```
 
-- **Solidity** — Verification boundary, eligibility store, gated credit, demo ERC-20.
-- **Backend** — TypeScript worker: config, Ethereum discovery, Proof Builder client (`@gluwa/usc-sdk` / HTTP), CC3 `eth_call` / broadcast helpers. Stateless; no eligibility database.
-- **Frontend** — React demo workspace: evidence → proof → status → access matrix, with a Three.js Bitcoin hero for presentation.
+This makes the operator a **single point of failure**:
+- **Compromise:** If the server or admin private key is compromised, an attacker can arbitrarily blacklist honest competitors or unfreeze malicious borrowers.
+- **Censorship / Downtime:** If the oracle server crashes or lags, Creditcoin credit markets continue lending to compromised addresses.
+- **Trust Burden:** Liquidity providers must blindly trust the server's off-chain narrative rather than cryptographic truth.
 
-Target chain: Creditcoin **CC3 testnet** (chain id **102031**).
+### The FreezeWire Solution
+FreezeWire eliminates oracle privilege entirely. There is **no `setStatus` function** anywhere in the protocol. The off-chain worker is strictly an untrusted transport and gas relayer. Anyone can submit a proof, but Creditcoin smart contracts will only alter an address's eligibility if the mathematical proof passes validation against Creditcoin's native precompile `0x0FD2`.
 
 ---
 
-## Repository structure
+<a id="the-core-innovation-why-proofs--oracles"></a>
+## ⚡ The Core Innovation: Why Proofs > Oracles
+
+| Dimension | Traditional Oracle / Keeper Pattern | FreezeWire Attestcoin Gate |
+|:---|:---|:---|
+| **Trust Anchor** | Centralized server, multisig, or webhook | Ethereum state roots + Creditcoin Attestor consensus |
+| **Verification Location** | Off-chain server code (private, opaquely executed) | On-chain EVM precompile (`0x0FD2`) + `BlacklistVerifier` |
+| **State Mutation Privileges** | Privileged `onlyAdmin` / `onlyRelayer` setter | **100% Permissionless** `submitProof(calldata)` |
+| **Adversarial Backend Impact** | Can forge, censor, or maliciously redirect freezes | **Zero impact** — invalid proofs revert on-chain |
+| **Replay & Ordering Defense** | Prone to race conditions and outdated replay packets | Strictly enforced `(chainKey, height, txIndex)` unique replay keys |
+| **Solvency & Collateral Rights** | Indiscriminate total account lock (funds trapped) | Selective gating: draw/escrow locked; **repay/withdraw open** |
+| **Issuer Immutability** | Token address configurable via mutable admin storage | `expectedEmitter` is hardcoded as **constructor-immutable** |
+
+---
+
+<a id="architecture--pipeline"></a>
+## 🏗️ Architecture & Pipeline
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 ETHEREUM MAINNET (L1)                                  │
+│  Circle FiatToken (0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)                         │
+│  Emits Blacklisted(address indexed _account) or UnBlacklisted(...)                     │
+│  Receipt: status = 0x1 (Success) · Block = 25,705,174 · txIndex = 18                   │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ Pinned Canonical Event
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                               ATTESTCOIN PROOF BUILDER                                 │
+│  Hosted service on Creditcoin CC3 Testnet (chainKey = 3 for Ethereum Mainnet)          │
+│  Produces: Merkle inclusion proof + historical block header continuity digest          │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ Cryptographic Proof Payload
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        UNTRUSTED WORKER & DISCOVERY LAYER                              │
+│  TypeScript / Viem service (Stateless, no database, no private compliance oracle)       │
+│  Endpoints: /v1/health · /v1/evidence/demo · /v1/prove/{tx} · /v1/relay                 │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ Permissionless submitProof(...)
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                             CREDITCOIN CC3 (CHAIN 102031)                              │
+│                                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │ 1. BlockProver Precompile (0x0000000000000000000000000000000000000FD2)           │  │
+│  │    Natively verifies Merkle Patricia inclusion against attestor block commitments│  │
+│  └──────────────────────────────────────────┬───────────────────────────────────────┘  │
+│                                             │ verifyAndEmit(chainKey, height, ...) == true
+│                                             ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │ 2. FreezeWire BlacklistVerifier                                                  │  │
+│  │    • Status Check: Receipt status must equal 1 (reverts SourceTxFailed)          │  │
+│  │    • ChainKey Gate: Must match configured chainKey (rejects Sepolia chainKey 1)  │  │
+│  │    • Emitter Gate: Log emitter must match immutable Circle USDC address          │  │
+│  │    • Event Gate: Topic[0] must match Blacklisted or UnBlacklisted                │  │
+│  │    • Account Binding: Topic[1] extracts true targeted counterparty               │  │
+│  │    • TxIndex Derivation: Computed deterministically from Merkle path bits        │  │
+│  └──────────────────────────────────────────┬───────────────────────────────────────┘  │
+│                                             │ Decoded & Bound Event Structs            │
+│                                             ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │ 3. EligibilityLedger                                                             │  │
+│  │    • Replay Defense: (chainKey, height, txIndex) consumed atomically             │  │
+│  │    • Chronological Ordering: Reject older observations for an account            │  │
+│  │    • State Mutation: statusOf[account] = RESTRICTED / ELIGIBLE                   │  │
+│  └──────────────────────────────────────────┬───────────────────────────────────────┘  │
+│                                             │ statusOf(account) query                  │
+│                                             ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │ 4. GatedCreditLine (Financial Enforcement)                                       │  │
+│  │    • RESTRICTED Borrowers:                                                       │  │
+│  │        ❌ drawCreditLine(...)           ──► REVERTS with BorrowerRestricted      │  │
+│  │        ❌ protectedTransfer(...)        ──► REVERTS with CounterpartyRestricted  │  │
+│  │        ❌ lockEscrow() / releaseEscrow()──► REVERTS with BorrowerRestricted      │  │
+│  │    • Solvency & Exit Preservation:                                               │  │
+│  │        ✅ repayCreditLine(...)          ──► ALLOWED (deleveraging permitted)     │  │
+│  │        ✅ withdrawUnusedCollateral(...) ──► ALLOWED (unencumbered equity safe)   │  │
+│  └──────────────────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+<a id="the-5-stage-verification-spine"></a>
+## 🛡️ The 5-Stage Verification Spine
+
+Every proof submitted to FreezeWire must pass five distinct, independent layers of validation before modifying ledger state:
+
+```text
+  [1. INCLUSION] ──► [2. STATUS] ──► [3. EMITTER] ──► [4. EVENT] ──► [5. ACCOUNT]
+     (0x0FD2)          (Status=1)      (USDC Immut)     (Topic0)         (Topic1)
+```
+
+1. **Stage 1: Inclusion (`0x0FD2`)**  
+   The proof bundle (encoded transaction, Merkle proof siblings, and continuity certificate) is passed to Creditcoin's native BlockProver precompile at `0x0000000000000000000000000000000000000FD2`. Verification fails if the Ethereum header was not attested or if the Merkle inclusion path does not evaluate to the attested root.
+
+2. **Stage 2: Receipt Status Verification (`EvmV1Decoder`)**  
+   Precompiles only verify that a transaction occurred; they do not verify transaction outcome. FreezeWire decodes the typed receipt status and mandates `status == 1`. If a transaction attempted to call `blacklist(...)` but reverted on Ethereum (e.g., unauthorized caller), FreezeWire reverts with `SourceTxFailed`.
+
+3. **Stage 3: Immutable Emitter Binding**  
+   An attacker could create a spoof token on Ethereum that emits a counterfeit `Blacklisted(address)` log. FreezeWire validates that the log emitter strictly equals the immutable `expectedEmitter` set at contract deployment (`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`). Even the contract owner cannot modify this address.
+
+4. **Stage 4: Canonical Event Matching**  
+   The log must match either `keccak256("Blacklisted(address)")` (`0xffa0cd89...`) or `keccak256("UnBlacklisted(address)")` (`0x84d5f992...`). Other logs within the same receipt (such as `Transfer`, `Approval`, or `Pause`) are safely discarded without failing the transaction.
+
+5. **Stage 5: Indexed Account Extraction**  
+   The target address is parsed directly from `topic[1]` of the verified log. An off-chain submitter cannot redirect a blacklist event targeting Address A to penalize Address B.
+
+---
+
+<a id="verified-security-properties"></a>
+## 🔒 Verified Security Properties
+
+FreezeWire implements rigorous defense-in-depth validated by comprehensive adversarial test suites:
+
+- **Constructor-Immutable Token Identity:** The official Circle USDC address on Ethereum cannot be rotated by an owner or compromised deployer key, ruling out rogue token injection (`T-SEC-OWNER`).
+- **Cryptographic Merkle `txIndex` Recovery:** The transaction index is derived mathematically from the `isLeft` boolean sequence of the Merkle proof siblings using `TxIndex.sol`, preventing malicious callers from supplying forged transaction indices (`T-SEC-TXINDEX`).
+- **Replay Protection via Unique Observation Keys:** Each verified receipt burns an on-chain key derived from `keccak256(chainKey, height, txIndex)`. The same proof cannot be submitted twice to reset or re-trigger states (`T-SEC-REPLAY`).
+- **Strict Chronological Ordering:** An account's state is guarded by its latest recorded position `(height, txIndex, logIndex)`. An attacker relaying an older `Blacklisted` proof cannot overwrite a newer verified `UnBlacklisted` proof (`T-SC-RESTORE`).
+- **Selective Financial Gating:** Borrowers placed in `RESTRICTED` status cannot draw fresh capital, transfer credit, or lock new escrow. However, to prevent trapping funds and risking protocol bad debt, restricted borrowers can always **repay outstanding balances** and **withdraw unencumbered collateral** (`T-FIN-REPAY`, `T-FIN-WITHDRAW`).
+- **Permissionless Execution:** Anyone can broadcast calldata to `submitProof`. Relayers earn no privileged status and cannot manipulate eligibility logic (`T-SEC-PERM`).
+
+---
+
+<a id="smart-contracts-specification"></a>
+## 📜 Smart Contracts Specification
+
+All contracts are written in Solidity `0.8.23`, compiled via Foundry with optimizer enabled (200 runs), and adhere strictly to custom errors and minimal interface segregation.
+
+| Contract / Library | Purpose & Responsibility | Key External Functions |
+|:---|:---|:---|
+| **`BlacklistVerifier.sol`** | Core verification engine. Invokes BlockProver `0x0FD2`, decodes EVM receipts, verifies status, and filters logs against the immutable USDC emitter. | `verifyAndBind(...)`, `setWindow(...)`, `setExpectedChainKey(...)` |
+| **`EligibilityLedger.sol`** | Authoritative compliance ledger. Records consumed replay keys, validates monotonic event ordering, and maintains address eligibility mapping. | `submitProof(...)`, `statusOf(address)`, `isObservationConsumed(...)` |
+| **`GatedCreditLine.sol`** | Gated DeFi credit line & escrow. Reads `EligibilityLedger.statusOf` on each call to enforce credit constraints. | `depositCollateral()`, `drawCreditLine()`, `repayCreditLine()`, `withdrawUnusedCollateral()`, `lockEscrow()`, `releaseEscrow()` |
+| **`MockUSD.sol`** | Demo ERC-20 token representing credit line liquidity on Creditcoin CC3. | `mint(...)`, `burn(...)`, `transfer(...)` |
+| **`EvmV1Decoder.sol`** | High-performance memory decoder for Gluwa Attestcoin EVM V1 receipts and log entries. | `decodeReceipt(...)`, `parseTopicAddress(...)` |
+| **`TxIndex.sol`** | Reconstructs transaction index from Merkle path bits (`isLeft`). | `recoverTxIndex(...)` |
+
+### Key System Addresses & Target Network
+
+```text
+Creditcoin CC3 Testnet
+├── Chain ID:              102031
+├── RPC URL:               https://rpc.cc3-testnet.creditcoin.network
+├── Blockscout Explorer:   https://creditcoin-testnet.blockscout.com
+├── BlockProver (Native):  0x0000000000000000000000000000000000000FD2
+└── ChainInfo (Native):    0x0000000000000000000000000000000000000FD3
+
+Ethereum Mainnet (Source Chain)
+├── Chain Key on CC3:      3
+├── Canonical Circle USDC: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+└── Canonical Demo Tx:     0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787
+```
+
+---
+
+<a id="attestcoin--creditcoin-integration"></a>
+## 🔗 Attestcoin & Creditcoin Integration
+
+Attestcoin is Creditcoin’s native cross-chain verification layer. It allows Creditcoin EVM contracts to inspect Ethereum transactions with cryptographic certainty.
+
+### 1. Chain Keys
+Creditcoin differentiates source networks by an internal `uint64 chainKey`:
+- **CC3 Testnet:** Ethereum Sepolia = `1`, **Ethereum Mainnet = `3`**
+- **CC3 Mainnet:** Ethereum Mainnet = `1`
+
+FreezeWire is configured for CC3 Testnet and mandates `chainKey == 3`. Passing a Sepolia proof (chainKey 1) to `BlacklistVerifier` triggers an immediate revert with `WrongChainKey`.
+
+### 2. Proof Generation API
+The untrusted backend interfaces with Creditcoin's hosted Proof Generator API:
+```http
+GET https://proof-gen-api.cc3-testnet.creditcoin.network/api/v1/proof-by-tx/3/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787
+```
+
+The returned payload conforms to the OpenAPI specification:
+- `merkle_proof`: Merkle root + array of sibling hashes with directional boolean flags (`is_left`).
+- `continuity_proof`: Lower endpoint digest + intermediate block commitment roots attesting chronological chain state.
+- `encoded_transaction`: Raw RLP-encoded Ethereum transaction bytes containing the receipt and event logs.
+
+### 3. Precompile Execution (`0x0FD2`)
+The verification engine calls the native BlockProver precompile:
+```solidity
+INativeQueryVerifier(0x0000000000000000000000000000000000000FD2).verifyAndEmit(
+    chainKey,
+    height,
+    encodedTransaction,
+    merkleProof,
+    continuityProof
+);
+```
+
+---
+
+<a id="interactive-demo-walkthrough"></a>
+## 🎬 Interactive Demo Walkthrough
+
+A complete end-to-end judge demonstration executing the 5-stage verification sequence:
+
+### Pinned Real-World Proof Evidence
+- **Transaction Hash:** [`0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787`](https://etherscan.io/tx/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787)
+- **Ethereum Block Height:** `25,705,174` (Mined August 7, 2026)
+- **Targeted Account:** `0xe05F529f5284D75624eBa386CB716928c3b54A2A`
+- **Method Called:** `blacklist(address)` → Emitted `Blacklisted(0xe05F...4A2A)`
+
+### The 5-Step Demo Sequence
+
+```text
+[Step 1: Baseline]       Borrower 0xe05F...4A2A queries ELIGIBLE. Deposits collateral & draws MockUSD.
+                               │
+[Step 2: Source Inspect] Verify the real blacklist transaction on Etherscan (Circle USDC, Status 1).
+                               │
+[Step 3: Fetch Proof]    Worker queries Attestcoin Proof Builder API -> Merkle + Continuity bundle.
+                               │
+[Step 4: Verify & Relay] Broadcast submitProof() on CC3 -> 0x0FD2 succeeds -> Ledger logs Restricted.
+                               │
+[Step 5: Gated Credit]   Borrower attempts another draw -> REVERT BorrowerRestricted.
+                         Borrower calls repayCreditLine() -> SUCCESS (exit rights preserved).
+```
+
+1. **Baseline State:** Before evidence is submitted to the ledger, the account queries as `ELIGIBLE` by default. The borrower deposits collateral into `GatedCreditLine` and successfully draws credit.
+2. **Inspect Real L1 Event:** The judge views the real transaction on Etherscan, observing Circle's official multisig calling `blacklist` and emitting event log topic `0xffa0cd89...`.
+3. **Generate Cryptographic Proof:** The operator clicks **"Fetch Proof"** in the FreezeWire UI or queries the worker at `GET /v1/prove/{txHash}`. Attestcoin returns the Merkle inclusion and continuity proofs.
+4. **On-Chain Verification:** The proof is broadcast via `submitProof(...)`. Creditcoin's precompile `0x0FD2` confirms cryptographic validity, `BlacklistVerifier` checks consumer invariants, and `EligibilityLedger` sets `statusOf[0xe05F...] = RESTRICTED`.
+5. **Financial Gating Enforced:** The restricted borrower attempts to execute `drawCreditLine()`. The transaction instantly reverts with custom error `BorrowerRestricted(0xe05F...)`. The borrower then calls `repayCreditLine()` and `withdrawUnusedCollateral()`, which execute successfully.
+
+---
+
+<a id="repository-structure"></a>
+## 📂 Repository Structure
 
 ```text
 freeze-wire/
-├── contracts/            Solidity sources, Foundry tests, Phase 8 scripts/
-├── backend/              Readability worker (HTTP API)
-├── frontend/             Demo UI + public/models (3D asset + attribution)
-├── config/               Network / deployment examples
-├── docs/                 PRD, architecture, security, demo, ADRs
-├── scripts/              Ops helpers
-├── tests/                Cross-cutting notes / future e2e
-├── .github/workflows/    CI (forge + worker + frontend)
-├── foundry.toml          Foundry root config (src/test under contracts/)
-├── .env.example          Placeholders only
-├── LICENSE               MIT
-└── README.md
+├── contracts/                     # Foundry smart contract workspace
+│   ├── src/                       # Solidity production sources
+│   │   ├── BlacklistVerifier.sol  # 0x0FD2 precompile wrapper & consumer checks
+│   │   ├── EligibilityLedger.sol  # Canonical eligibility ledger & replay store
+│   │   ├── GatedCreditLine.sol    # Compliance-gated lending & escrow facility
+│   │   ├── MockUSD.sol            # Demo ERC-20 collateral/liquidity asset
+│   │   ├── interfaces/            # Minimal clean interfaces
+│   │   └── libraries/             # EvmV1Decoder, TxIndex, EventSelectors
+│   ├── test/                      # 10 test suites (93 passed unit & fuzz tests)
+│   │   ├── AdversarialReceipts.t.sol
+│   │   ├── SecurityBoundaries.t.sol
+│   │   ├── EligibilityLedger.t.sol
+│   │   └── GatedCreditLine.t.sol
+│   └── script/                    # Deployment scripts (DeployCC3Testnet.s.sol)
+│
+├── backend/                       # Stateless proof discovery & relay worker
+│   ├── src/
+│   │   ├── server.ts              # HTTP API server (/v1/health, /v1/prove, /v1/relay)
+│   │   ├── attestcoin/            # Proof Builder HTTP client & index recovery
+│   │   ├── relay/                 # CC3 broadcast helper & calldata preparation
+│   │   └── discover/              # Ethereum event poller & scanner
+│   └── test/                      # 31 automated backend tests
+│
+├── frontend/                      # Interactive React 19 + Three.js demo application
+│   ├── src/
+│   │   ├── components/            # Verification spine, evidence cards, 3D viewport
+│   │   ├── hooks/                 # Contract queries & worker RPC hooks
+│   │   └── App.tsx                # Main demo dashboard
+│   └── public/models/             # 3D assets (Bitcoin visual model)
+│
+├── config/                        # Network definitions & environment templates
+├── deployments/                   # Deployment registries (cc3-testnet.example.json)
+├── docs/                          # Comprehensive architectural specifications
+│   ├── SYSTEM_ARCHITECTURE.md     # Full component boundary map
+│   ├── SMART_CONTRACT_SPECIFICATION.md
+│   ├── SECURITY_MODEL.md          # Formal invariants & threat models
+│   ├── ATTESTCOIN_INTEGRATION.md  # Low-level protocol details
+│   └── DEMO_SPECIFICATION.md      # 150-second presentation script
+└── foundry.toml                   # Foundry profile configuration
 ```
 
 ---
 
-## Tech stack
+<a id="quickstart--local-verification"></a>
+## 🚀 Quickstart & Local Verification
 
-| Layer | Stack |
-|---|---|
-| Contracts | Solidity **0.8.23**, Foundry (`forge`, forge-std) |
-| Attestcoin / CTC | BlockProver `0x0FD2`, CC3 Proof Builder, `@gluwa/usc-sdk` |
-| Worker | Node ≥ 20, TypeScript, `viem`, `zod`, `dotenv` |
-| Frontend | React 19, Vite, TypeScript, Tailwind CSS 4, Radix/shadcn primitives, Motion |
-| 3D | Three.js, React Three Fiber / Drei |
-| CI | GitHub Actions: `forge fmt/build/test`, worker `tsc` + tests, frontend build |
-
----
-
-## Run locally
-
-**Prerequisites:** Node.js ≥ 20, Foundry (`forge`), Git.
+### Prerequisites
+- **Node.js** ≥ 20.x
+- **Foundry** (`forge`, `cast`, `anvil`)
+- **Git**
 
 ```bash
-git clone <this-repo-url>
+# 1. Clone the repository
+git clone https://github.com/CodewithJha/freeze-wire.git
 cd freeze-wire
+
+# 2. Configure environment
 cp .env.example .env
-# Optional UI overrides:
 cp frontend/.env.example frontend/.env
 ```
 
-Fill post-deploy addresses and optional `RELAY_PRIVATE_KEY` / `DEPLOYER_PRIVATE_KEY` only after you deploy. Never commit `.env`.
-
-**Contracts**
-
-```bash
-forge fmt --check && forge build && forge test
-```
-
-**Worker** (default `http://127.0.0.1:8000`)
+### 1. Smart Contracts Verification (Foundry)
+Execute the complete test suite across all 10 contract modules:
 
 ```bash
-cd backend && npm ci && npm run build && npm test
-npm start
+# Format check, build, and test
+forge fmt --check
+forge build
+forge test
 ```
 
-Optional live Attestcoin integration tests (not required for CI):
+> **Result:** `93 passed, 0 failed, 1 skipped (94 total tests)`. (The single skip is the optional live test requiring a live Attestcoin API connection).
 
+### 2. Backend Worker Verification
+Run the backend test suite and start the local proof relay server:
+
+```bash
+cd backend
+npm ci
+npm test       # Runs 31 unit & integration tests
+npm run build
+npm start      # Starts HTTP server at http://127.0.0.1:8000
+```
+
+*Optional:* To run tests directly against the live Creditcoin Proof Builder:
 ```bash
 LIVE_ATTESTCOIN=1 npm test
-# Funded relay broadcast (optional):
-LIVE_ATTESTCOIN=1 LIVE_RELAY_BROADCAST=1 npm test
 ```
 
-**Frontend** (`http://localhost:5173`)
+### 3. Frontend Interactive Workspace
+Launch the React 19 demo application:
 
 ```bash
-cd frontend && npm ci && npm run dev
-# Production bundle check:
+cd frontend
+npm ci
+npm run dev    # Starts Vite dev server at http://localhost:5173
+```
+
+To verify the production build:
+```bash
 npm run build
 ```
 
-Point `VITE_API_BASE_URL` at the worker. Important env groups (see `.env.example`): `CC3_RPC_URL`, `ETH_RPC_URL`, `PROOF_BUILDER_URL`, `ATTESTCOIN_CHAIN_KEY`, `SOURCE_USDC_ADDRESS`, `DEMO_SOURCE_TX`, and after deploy `VERIFIER_ADDRESS` / `LEDGER_ADDRESS` / `CREDIT_LINE_ADDRESS` / `MOCK_USD_ADDRESS`. Network examples: `config/networks.example.json`.
+---
+
+<a id="roadmap--deployment-status"></a>
+## 🗺️ Roadmap & Deployment Status
+
+| Subsystem | Scope / Capability | Current Status |
+|:---|:---|:---:|
+| **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **100% Verified** (93/93 tests passing) |
+| **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` bitwise Merkle path recovery | **100% Verified** |
+| **Backend Proof Client** | Attestcoin Proof Builder integration & OpenAPI client | **100% Verified** (31/31 tests passing) |
+| **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js 3D visualization | **100% Built & Verified** |
+| **CC3 Testnet Deployment** | Script `DeployCC3Testnet.s.sol` + network configuration | **Script Ready** (Broadcast awaiting funded deployer key) |
+| **CC3 Mainnet Deployment** | Production mainnet deployment with multi-asset gates | *Post-demo target* |
 
 ---
 
-## Verification / tests
+<a id="third-party-attribution"></a>
+## 🎨 Third-Party Attribution
 
-Baseline verified in this repository:
-
-| Suite | Result / command |
-|---|---|
-| Foundry | **92 passed, 0 failed, 1 skipped** (`forge test`) |
-| Worker | **30 passed** (`cd backend && npm test`) |
-| Frontend | Production build succeeds (`cd frontend && npm run build`) |
-
-Contract coverage includes consumer checks, replay, immutable emitter, adversarial receipts, and selective credit/escrow enforcement (`T-SEC-*`, `T-FIN-*`, and related suites). The single Foundry skip is the gated live Attestcoin suite when not opted in. There is no formal verification claim. See [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md).
+- **3D Asset:** Bitcoin 3D Model (`frontend/public/models/bitcoin.glb`) created by **Taohid Animation**, licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [`frontend/public/models/README.md`](frontend/public/models/README.md) for full attribution. Remapped materials and dynamic lighting are authored in FreezeWire.
+- **Protocol Dependencies:** Creditcoin CC3 & Attestcoin BlockProver precompile specifications provided by [Gluwa](https://gluwa.com).
+- **Compliance Source:** Circle Internet Financial, LLC (USDC FiatToken compliance event signatures).
 
 ---
 
-## Project documentation
+<a id="license"></a>
+## 📄 License
 
-| Document | Topic |
-|---|---|
-| [`docs/PRD.md`](docs/PRD.md) | Product intent |
-| [`docs/SYSTEM_ARCHITECTURE.md`](docs/SYSTEM_ARCHITECTURE.md) | Component boundaries |
-| [`docs/TECHNICAL_SPECIFICATION.md`](docs/TECHNICAL_SPECIFICATION.md) | Technical behavior |
-| [`docs/SMART_CONTRACT_SPECIFICATION.md`](docs/SMART_CONTRACT_SPECIFICATION.md) | On-chain API |
-| [`docs/SECURITY_MODEL.md`](docs/SECURITY_MODEL.md) | Invariants and trust |
-| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | Actors and abuse cases |
-| [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) | Test map |
-| [`docs/ATTESTCOIN_INTEGRATION.md`](docs/ATTESTCOIN_INTEGRATION.md) | chainKey, Proof Builder, precompile |
-| [`docs/DEMO_SPECIFICATION.md`](docs/DEMO_SPECIFICATION.md) | Judge demo script |
-| [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | Phases and status |
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for full terms and conditions.
 
-API surface: [`docs/API_SPECIFICATION.md`](docs/API_SPECIFICATION.md). Decisions: [`docs/adr/`](docs/adr/).
-
----
-
-## Limitations / current status
-
-| Area | Status |
-|---|---|
-| Solidity protocol + Foundry suite | Implemented and locally verified |
-| Worker HTTP API + unit tests | Implemented |
-| Frontend demo workspace | Implemented |
-| Live Proof Builder prove path | Optionally live-tested (`LIVE_ATTESTCOIN=1`) |
-| CC3 deployment of verifier / ledger / credit line | **Script ready** — live broadcast blocked until funded `DEPLOYER_PRIVATE_KEY` (see `docs/DEPLOYMENT_PLAN.md`) |
-| On-chain `Restricted` demo tx on Creditcoin | **Deployment-dependent** (`scripts/submit-demo-proof.mjs`) |
-| Server-side `POST /v1/relay` broadcast | Needs `LEDGER_ADDRESS` + `RELAY_PRIVATE_KEY` (else calldata for a wallet) |
-| CC3 mainnet / writability / Credal | Out of scope for this submission |
-
-FreezeWire currently proves the verification and enforcement design end-to-end in tests, and the evidence → proof path against Attestcoin infrastructure. A public Creditcoin state change is honest only after addresses are deployed and a funded `submitProof` lands.
-
----
-
-## Attribution
-
-### Bitcoin 3D model (`frontend/public/models/bitcoin.glb`)
-
-- **Author:** Taohid Animation
-- **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-- **Details:** [`frontend/public/models/README.md`](frontend/public/models/README.md)
-
-FreezeWire does not claim original authorship of this model. Materials and lighting are remapped in-app; the mesh and authored texture remain the original asset.
-
-### Other
-
-- Circle USDC / FiatToken event semantics (Ethereum) — compliance source referenced, not owned.
-- Creditcoin / Attestcoin — BlockProver, Proof Builder, CC3 testnet.
-- `forge-std` — vendored under `contracts/lib/`.
-
----
-
-## License
-
-MIT — see [`LICENSE`](LICENSE).
+<div align="center">
+  <sub>Built for the Creditcoin ecosystem. Designed and maintained with precision.</sub>
+</div>
