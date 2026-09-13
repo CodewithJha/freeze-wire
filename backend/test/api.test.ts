@@ -428,8 +428,8 @@ describe('T-API HTTP surface', () => {
     });
   });
 
-  it('RELAY_GATE rejects unauthorized remote callers', async () => {
-    const config = baseConfig({ relayPrivateKey: undefined, relayGate: 'secret' });
+  it('RELAY_GATE rejects unauthorized remote callers when relay key is set', async () => {
+    const config = baseConfig({ relayPrivateKey: RELAY_KEY, relayGate: 'secret' });
     const fetchImpl: typeof fetch = async () => new Response(JSON.stringify(sample), { status: 200 });
     await withServer(config, fetchImpl, async (base) => {
       const denied = await fetch(`${base}/v1/relay`, {
@@ -439,6 +439,51 @@ describe('T-API HTTP surface', () => {
       });
       assert.equal(denied.status, 401);
     });
+  });
+
+  it('relay disabled returns RELAY_DISABLED for non-localhost without gate', async () => {
+    const config = baseConfig({ relayPrivateKey: undefined, relayGate: undefined });
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.includes('/api/v1/proof-by-tx')) {
+        return new Response(JSON.stringify(sample), { status: 200 });
+      }
+      if (url.includes('/api/v1/attested-height')) {
+        return new Response(JSON.stringify({ attestedHeight: 30_000_000 }), { status: 200 });
+      }
+      return new Response('missing', { status: 404 });
+    };
+    const log = createLogger('error');
+    const handler = createWorkerHandler({ config, log, fetchImpl });
+    const server = http.createServer((req, res) => {
+      // Simulate Render/public peer so isLocalhost is false.
+      Object.defineProperty(req.socket, 'remoteAddress', { value: '203.0.113.10' });
+      void handler(req, res);
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const addr = server.address();
+    assert.ok(addr && typeof addr === 'object');
+    const base = `http://127.0.0.1:${addr.port}`;
+    try {
+      const relay = await fetch(`${base}/v1/relay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '203.0.113.10' },
+        body: JSON.stringify({ txHash: DEMO_TX }),
+      });
+      assert.equal(relay.status, 404);
+      const body = (await relay.json()) as {
+        code: string;
+        submitProof?: { to: string; data: string };
+        message: string;
+      };
+      assert.equal(body.code, ApiErrorCode.RELAY_DISABLED);
+      assert.ok(body.submitProof?.to);
+      assert.ok(body.submitProof?.data);
+      assert.equal(body.message.includes('RELAY_PRIVATE_KEY'), false);
+      assert.equal(body.message.includes('RELAY_GATE'), false);
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+    }
   });
 });
 
@@ -484,7 +529,8 @@ describe('T-API-NOSETTER security', () => {
       assert.match(body.message, /wallet submitProof/i);
     });
 
-    const gated = baseConfig({ relayPrivateKey: undefined, relayGate: 'secret-gate' });
+    // Gate only applies when a relayer key is configured (broadcast path).
+    const gated = baseConfig({ relayPrivateKey: RELAY_KEY, relayGate: 'secret-gate' });
     await withServer(gated, fetchImpl, async (base) => {
       const denied = await fetch(`${base}/v1/relay`, {
         method: 'POST',

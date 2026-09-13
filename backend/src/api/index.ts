@@ -332,7 +332,11 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
       }
 
       if (path === '/v1/relay' && req.method === 'POST') {
-        assertRelayAuth(req);
+        // Auth only when a relayer key is configured (broadcast path). When unset,
+        // skip gate so clients still receive honest RELAY_DISABLED + submitProof calldata.
+        if (config.relayPrivateKey) {
+          assertRelayAuth(req);
+        }
         log.info('api.relay', sanitizeLogFields({ requestId, phase: 'start' }));
         const body = (await readJson(req)) as RelayRequestBody;
         const result = await relaySubmitProof({ body, config, proofClient, cc3, log });
