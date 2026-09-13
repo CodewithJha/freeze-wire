@@ -150,7 +150,7 @@ Verified against local `deployments/cc3-testnet.json` + `deployments/demo-eviden
 | submitProof tx | `0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45` |
 | submitProofStatus | `success` |
 | statusOf(demo) | `RESTRICTED` |
-| draw as restricted | reverted (`BorrowerRestricted` selector evidenced) |
+| draw as restricted | reverted (`Restricted()` selector `0xccc08913` evidenced) |
 
 **Demo honesty:** The featured demo account may **already** be `RESTRICTED`. Do not claim a live ELIGIBLE→RESTRICTED transition on `0xe05F…` during presentation; use the eligible actor for “before,” explorers / restricted account for consequence. See [`DEMO_SPECIFICATION.md`](./DEMO_SPECIFICATION.md).
 

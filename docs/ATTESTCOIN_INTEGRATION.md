@@ -3,6 +3,16 @@
 Attestcoin is **load-bearing**. Eligibility cannot move without a proof that BlockProver accepts. This page freezes the integration against official docs fetched **2026-09-10**. See `RESEARCH_BASELINE.md` for provenance.
 
 **Submission one-pager:** [`ATTESTCOIN_INTEGRATION_SUMMARY.md`](./ATTESTCOIN_INTEGRATION_SUMMARY.md) (14 points + removal test + live evidence).
+**Live verified facts:** [`ATTESTCOIN_EVIDENCE.md`](./ATTESTCOIN_EVIDENCE.md) · **Attack matrix:** [`SECURITY_EVIDENCE.md`](./SECURITY_EVIDENCE.md).
+
+### Proof chain (short)
+
+```text
+ETH USDC Blacklisted → Proof Builder bundle → submitProof → 0x0FD2
+  → consumer checks → EligibilityLedger → GatedCreditLine (Restricted on draw)
+```
+
+`0x0FD2` proves inclusion + continuity only. Receipt success, emitter, event, and account are ASC checks. Removal of Attestcoin removes the only path to `RESTRICTED`.
 
 ---
 

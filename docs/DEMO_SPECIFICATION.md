@@ -55,7 +55,7 @@ If Proof Builder cannot serve this height, **swap to a newer real USDC Blacklist
 | **0:45–1:10** | Etherscan | Open demo `blacklist` tx. Point at Success, USDC emitter, `Blacklisted` for **B** (`0xe05F…`). | Public explorer. | DEMO-001 real source. |
 | **1:10–1:35** | Worker `/v1/prove` or UI Prove | Speak **INCLUSION · STATUS · EMITTER · EVENT · ACCOUNT**. Bundle ready ≠ ledger write. | Proof JSON; precompile path clear. | Attestcoin load-bearing (DEMO-002). |
 | **1:35–2:05** | Blockscout ledger / prior tx | Show `submitProof` `0x07e3…` and/or live wallet submit. `Restricted` for **B**. No `setStatus`. | Ledger `RESTRICTED`. | CTC state from proof. |
-| **2:05–2:35** | UI / wallet as **B** | Draw → reverts `BorrowerRestricted`. Repay succeeds. Optional unused withdraw. | Financial consequence. | DEMO-004; exits not trapped. |
+| **2:05–2:35** | UI / wallet as **B** | Draw → reverts `Restricted()`. Repay succeeds. Optional unused withdraw. | Financial consequence. | DEMO-004; exits not trapped. |
 | **2:35–3:00** | Face / last slide | Speak DEMO-005 closer verbatim. | — | Backend is not the oracle. |
 
 ---

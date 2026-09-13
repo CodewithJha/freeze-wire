@@ -16,7 +16,7 @@ Labels: **FACT** (observed or sourced), **ASSUMPTION**, **INFERENCE**, **UNVERIF
 | Docs | ADR-0001 (amended), `PROJECT_RESET.md` relocation section, `README.md`, `ASSUMPTIONS_AND_CONSTRAINTS.md`, `PRD.md` workspace constraint, `CONTRIBUTING.md`. |
 | Historical only | Nested `kaggriculture/freeze-wire/` layout is recorded as **obsolete**, not current. |
 
-Dedicated remote: **FACT** none configured. Adding one is a **future decision**, not claimed.
+Dedicated remote: **FACT** (updated): public GitHub `https://github.com/CodewithJha/freeze-wire` tracks `origin/master`. Earlier “none configured” row is **historical** from the documentation-correction gate.
 
 ---
 
@@ -137,25 +137,31 @@ Unchanged: `SECURITY_MODEL` / `THREAT_MODEL` > `REQUIREMENTS` > `PRD` > architec
 
 ---
 
-## Remaining UNVERIFIED
+## Remaining UNVERIFIED / residual
 
-Phase 3 live checks (2026-09-10) observed Proof Builder 200 for the demo tx, `0x0FD2.verify == true`, `calculateTxIndex == 18`, health CC3+ETH connected, verifyAndEmit estimate 69512 gas. Residual:
+Phase 3 live checks (2026-09-10) observed Proof Builder 200 for the demo tx, `0x0FD2.verify == true`, `calculateTxIndex == 18`, health CC3+ETH connected, verifyAndEmit estimate 69512 gas. Those observations remain valid for that pass.
 
-- EIP-1559 vs `--legacy` for CC3 **broadcasts**
-- Gas of full `submitProof` on CC3 (ledger not deployed this phase)
-- Funded deployer for an on-chain Restricted event (Phase 8 BLOCKER)
+**Phase 8 complete (supersedes deploy BLOCKER):** live CC3 deploy + `submitProof` + `RESTRICTED` evidenced in `deployments/demo-evidence-public.json` / README. Do not treat “ledger not deployed” as current.
+
+Residual (not code-deploy blockers):
+
+- EIP-1559 vs `--legacy` for future broadcasts (worker uses provider fees)
+- Owner-tunable `expectedChainKey` / window (emitter immutable) — see `SECURITY_EVIDENCE.md`
+- packaging submit / video / deck — **NEXT HUMAN ACTION**
 
 ---
 
 ## Remaining BLOCKERS
 
-- **Funded CC3 testnet deployer key** for Phase 8 on-chain `Restricted` event (**BLOCKER**)
-- Dedicated public public remote is an **open future decision**, not a current remote and not a Phase 1 code blocker
+- ~~**Funded CC3 testnet deployer key** for Phase 8 on-chain `Restricted` event~~ — **SUPERSEDED** by live Phase 8 complete.
+- Platform submission completeness (packaging) is a **human deadline residual**, not an internal docs contradiction.
 
-No remaining internal documentation contradiction that would make implementation contradict security **if** Phase 1 follows these specs. Contracts are ready to be *specified into code* only when the mentor opens Phase 1. Live Restricted event is **not** guaranteed until Phase 3/8.
+No remaining internal documentation contradiction that would make the live deploy contradict security invariants. Contracts, worker, and demo evidence are on `master`.
 
 ---
 
 ## This pass vs Gate 5A
 
 Prior Gate 5A audit did not record standalone-repo current layout or immutable emitter. Those are corrected here. Do not treat the previous audit row “chainKey documented everywhere” as a substitute for re-checking after edits — re-checked this pass: **FACT** values still 102031 / testnet ETH mainnet key 3 / mainnet ETH mainnet key 1.
+
+**Later note (90+ push):** stale “pending deploy / Phase 8 BLOCKER” language above was marked superseded; see `ASSUMPTIONS_AND_CONSTRAINTS.md` Live deploy section and `ATTESTCOIN_EVIDENCE.md`.

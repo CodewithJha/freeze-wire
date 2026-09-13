@@ -167,12 +167,13 @@ FreezeWire eliminates oracle privilege entirely. There is **no `setStatus` funct
 │  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
 │  │ 4. GatedCreditLine (Financial Enforcement)                                       │  │
 │  │    • RESTRICTED Borrowers:                                                       │  │
-│  │        ❌ drawCreditLine(...)           ──► REVERTS with BorrowerRestricted      │  │
-│  │        ❌ protectedTransfer(...)        ──► REVERTS with CounterpartyRestricted  │  │
-│  │        ❌ lockEscrow() / releaseEscrow()──► REVERTS with BorrowerRestricted      │  │
+│  │        ❌ draw(...)                     ──► REVERTS with Restricted()            │  │
+│  │        ❌ protectedTransfer(...)        ──► REVERTS with Restricted()            │  │
+│  │        ❌ lockEscrow() / releaseEscrow()──► REVERTS with Restricted()            │  │
 │  │    • Solvency & Exit Preservation:                                               │  │
-│  │        ✅ repayCreditLine(...)          ──► ALLOWED (deleveraging permitted)     │  │
-│  │        ✅ withdrawUnusedCollateral(...) ──► ALLOWED (unencumbered equity safe)   │  │
+│  │        ✅ repay(...)                    ──► ALLOWED (deleveraging permitted)     │  │
+│  │        ✅ withdraw(...)                 ──► ALLOWED (unencumbered / unused only) │  │
+│  │        ✅ deposit(...)                  ──► ALLOWED                              │  │
 │  └──────────────────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +200,7 @@ Every proof submitted to FreezeWire must pass five distinct, independent layers 
    An attacker could create a spoof token on Ethereum that emits a counterfeit `Blacklisted(address)` log. FreezeWire validates that the log emitter strictly equals the immutable `expectedEmitter` set at contract deployment (`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`). Even the contract owner cannot modify this address.
 
 4. **Stage 4: Canonical Event Matching**  
-   The log must match either `keccak256("Blacklisted(address)")` (`0xffa0cd89...`) or `keccak256("UnBlacklisted(address)")` (`0x84d5f992...`). Other logs within the same receipt (such as `Transfer`, `Approval`, or `Pause`) are safely discarded without failing the transaction.
+   The log must match either `keccak256("Blacklisted(address)")` (`0xffa4e6181777692565cf28528fc88fd1516ea86b56da075235fa575af6a4b855`) or `keccak256("UnBlacklisted(address)")` (`0x117e3210bb9aa7d9baff172026820255c6f6c30ba8999d1c2fd88e2848137c4e`) — same constants as `EventSelectors.sol` / `cast keccak`. Other logs within the same receipt (such as `Transfer`, `Approval`, or `Pause`) are safely discarded without failing the transaction.
 
 5. **Stage 5: Indexed Account Extraction**  
    The target address is parsed directly from `topic[1]` of the verified log. An off-chain submitter cannot redirect a blacklist event targeting Address A to penalize Address B.
@@ -228,8 +229,8 @@ All contracts are written in Solidity `0.8.23`, compiled via Foundry with optimi
 | Contract / Library | Purpose & Responsibility | Key External Functions |
 |:---|:---|:---|
 | **`BlacklistVerifier.sol`** | Core verification engine. Invokes BlockProver `0x0FD2`, decodes EVM receipts, verifies status, and filters logs against the immutable USDC emitter. | `verifyAndBind(...)`, `setWindow(...)`, `setExpectedChainKey(...)` |
-| **`EligibilityLedger.sol`** | Authoritative compliance ledger. Records consumed replay keys, validates monotonic event ordering, and maintains address eligibility mapping. | `submitProof(...)`, `statusOf(address)`, `isObservationConsumed(...)` |
-| **`GatedCreditLine.sol`** | Gated DeFi credit line & escrow. Reads `EligibilityLedger.statusOf` on each call to enforce credit constraints. | `depositCollateral()`, `drawCreditLine()`, `repayCreditLine()`, `withdrawUnusedCollateral()`, `lockEscrow()`, `releaseEscrow()` |
+| **`EligibilityLedger.sol`** | Authoritative compliance ledger. Records consumed replay keys (`processed` mapping), validates monotonic event ordering, and maintains address eligibility mapping. | `submitProof(...)`, `statusOf(address)`, `processed(bytes32)` |
+| **`GatedCreditLine.sol`** | Gated DeFi credit line & escrow. Reads `EligibilityLedger.statusOf` on each call to enforce credit constraints. | `deposit(...)`, `draw(...)`, `repay(...)`, `withdraw(...)`, `protectedTransfer(...)`, `lockEscrow(...)`, `releaseEscrow(...)`, `refundEscrow(...)` |
 | **`MockUSD.sol`** | Demo ERC-20 token representing credit line liquidity on Creditcoin CC3. | `mint(...)`, `burn(...)`, `transfer(...)` |
 | **`EvmV1Decoder.sol`** | High-performance memory decoder for Gluwa Attestcoin EVM V1 receipts and log entries. | `decodeReceipt(...)`, `parseTopicAddress(...)` |
 | **`TxIndex.sol`** | Reconstructs transaction index from Merkle path bits (`isLeft`). | `recoverTxIndex(...)` |
@@ -318,7 +319,7 @@ The featured Circle-blacklisted account (`0xe05F…`) is **already `RESTRICTED`*
                                │
 [Step 4: Verify & Relay] Prior or live submitProof on CC3 → ledger Restricted for 0xe05F….
                                │
-[Step 5: Gated Credit]   As 0xe05F…: draw reverts BorrowerRestricted; repay / unused withdraw OK.
+[Step 5: Gated Credit]   As 0xe05F…: draw reverts Restricted(); repay / unused withdraw OK.
 ```
 
 **Closer:** *The backend never told Creditcoin the address was blacklisted. The Attestcoin proof did.*
@@ -390,7 +391,8 @@ cd freeze-wire
 
 # 2. Configure environment
 cp .env.example .env
-cp frontend/.env.example frontend/.env
+cp frontend/.env.example frontend/.env.local
+# Vite also loads frontend/.env; sync-deployment-env.mjs writes .env.local
 ```
 
 ### 1. Smart Contracts Verification (Foundry)
@@ -411,7 +413,7 @@ Run the backend test suite and start the local proof relay server:
 ```bash
 cd backend
 npm ci
-npm test       # Runs 33 unit & integration tests
+npm test       # Runs 38 unit & integration tests
 npm run build
 npm start      # Starts HTTP server at http://127.0.0.1:8000
 ```
@@ -474,7 +476,7 @@ Public addresses and txs below are verified against local registries `deployment
 |:---|:---|:---:|
 | **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **Verified** (93 passed, 1 skipped) |
 | **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` Merkle path recovery | **Verified** |
-| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (33 passed) |
+| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (38 passed) |
 | **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js | **Built** |
 | **CC3 Testnet Deployment** | Live addresses + `submitProof` evidence above | **Live on chain 102031** |
 | **CC3 Mainnet Deployment** | Production mainnet | *Out of scope for this demo* |

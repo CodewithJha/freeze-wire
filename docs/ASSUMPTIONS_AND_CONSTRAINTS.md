@@ -26,7 +26,7 @@ Never promote ASSUMPTION to FACT.
 - Freshness window `0,0` (unbounded) for the demo so the August 2026 tx is admissible.
 - Default LTV 50% is enough for a demo credit line.
 - Localhost-only relay is enough to limit gas grief.
-- Mentor can fund a CC3 wallet before Phase 8.
+- ~~Mentor can fund a CC3 wallet before Phase 8.~~ **Superseded:** Phase 8 deploy completed (see FACT / Live deploy note below).
 - `txIndex` recovered from Merkle `isLeft` path matches Gluwa / `0x0FD2.calculateTxIndex` (FACT this Phase 3 pass: demo siblings recover 18, precompile returns `0x12`).
 - Marking replay after a successful verify+receipt with no matching logs, **without reverting**, is the EVM-correct burn (ADR-0017). The prior “mark then revert NoMatchingEvent” wording was contradictory with the EVM.
 - MAX_LOGS cap 64 is enough for USDC blacklist receipts.
@@ -49,17 +49,26 @@ Never promote ASSUMPTION to FACT.
 - `0x0FD2.calculateTxIndex` = 18; `0x0FD2.verify` = true; `eth_estimateGas(verifyAndEmit)` = 69512. Under the 500 KB source-tx / block-gas concern for this proof.
 - Decoder: tx type 2, `receiptStatus == 1`, emitter canonical USDC, topic0 Blacklisted, account `0xe05F…4A2A`.
 - Public Proof Builder required **no** API key this pass. Keep `PROOF_BUILDER_API_KEY` optional.
-- FreezeWire ledger was **not** submitted on CC3 (no funded deploy). Eligibility write is not claimed.
+- ~~FreezeWire ledger was **not** submitted on CC3 (no funded deploy).~~ **Superseded by Phase 8 complete** (see below).
+
+## Live deploy (Phase 8 complete — FACT, public only)
+
+Supersedes the Phase 3 “no funded deploy” row and the historical Phase 8 BLOCKER. Do not rewrite Phase 3 observations; they remain valid for that date.
+
+- Contracts live on CC3 testnet `102031`: Verifier `0x6bf2…D869`, Ledger `0xde64…0C9d`, CreditLine `0xB04f…d340`, MockUSD `0x6943…C5B3` (deploy block `5479278`).
+- Demo `submitProof` tx `0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45` → `statusOf(0xe05F…)=RESTRICTED`.
+- Public GitHub: `https://github.com/CodewithJha/freeze-wire`. Evidence artifact: `deployments/demo-evidence-public.json`.
 
 ## Still UNVERIFIED / residual
 
-- EIP-1559 vs `--legacy` for CC3 **broadcasts** of `submitProof` (Phase 8). **Phase 4 worker:** prefer provider fee estimation (EIP-1559 when `baseFeePerGas` present; else legacy `eth_gasPrice`). Not hardcoded gas prices.
-- Gas of a full `EligibilityLedger.submitProof` on CC3 (only precompile `verifyAndEmit` was estimated ~69512). Ledger not deployed this phase → submitProof estimate/broadcast blocked until addresses + funded key.
+- EIP-1559 vs `--legacy` for future CC3 broadcasts (worker prefers provider fee estimation; not hardcoded prices).
+- Owner can still retune `expectedChainKey` / height window post-deploy (operational residual; emitter immutable). Documented in SECURITY_EVIDENCE.
+- packaging platform **Submit** / demo video / deck completeness is a **human submission** residual, not a protocol BLOCKER.
 
 ## BLOCKER
 
-- **Funded CC3 testnet deployer key** for Phase 8 on-chain Restricted event.
-- Dedicated public GitHub / public remote is an **open future decision**, not a current remote. Not blocked by Kaggriculture (FreezeWire is already a standalone repo).
+- ~~**Funded CC3 testnet deployer key** for Phase 8 on-chain Restricted event.~~ **SUPERSEDED** — Phase 8 complete; live Restricted evidenced.
+- optional platform packaging (video/deck/Submit) remains a **human action** before the project deadline — not a code/deploy blocker.
 
 ## Constraints
 

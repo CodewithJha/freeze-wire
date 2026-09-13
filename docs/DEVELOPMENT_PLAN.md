@@ -95,11 +95,12 @@ CI: fmt, forge test, `tsc --noEmit` when TS exists. Lightweight only.
 
 ## Phase 8 — Deployment
 
-**Objective:** CC3 testnet contracts + one `submitProof` if key funded.  
-**Tasks:** Follow `DEPLOYMENT_PLAN.md`. **Do not deploy in Gate 5A.**  
-**Dependencies:** Mentor **BLOCKER**: funded `DEPLOYER_PRIVATE_KEY`.  
-**Verification:** Blockscout addresses; smoke tests.  
-**Exit:** Ledger Restricted event for demo account **or** documented wait.
+**Objective:** CC3 testnet contracts + one `submitProof` if key funded.
+**Tasks:** Follow `DEPLOYMENT_PLAN.md`. **Do not deploy in Gate 5A.**
+**Dependencies (historical):** Mentor funded `DEPLOYER_PRIVATE_KEY` was required to exit.
+**Status (2026-09):** **Complete on CC3 testnet** — live addresses + `submitProof` `0x07e3…` + `statusOf(demo)=RESTRICTED` in `deployments/demo-evidence-public.json` / README. Do not redeploy unless emitter/window policy changes require it.
+**Verification:** Blockscout addresses; smoke tests.
+**Exit:** Ledger Restricted for demo account — **met**.
 
 ---
 
