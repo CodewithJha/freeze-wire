@@ -24,6 +24,7 @@ import {
   WorkerApiError,
   type ProveResponse,
 } from '@/lib/api';
+import { computeEvidenceSequence } from '@/lib/evidenceSequence';
 import {
   DEMO_SOURCE_TX,
   type EligibilityStatus,
@@ -144,18 +145,15 @@ export function DemoWorkspace() {
   }, []);
 
   const sequence = useMemo(
-    () => ({
-      evidenceLoaded: Boolean(evidence.txHash),
-      proofReady: evidence.proofReady,
-      calldataPrepared: Boolean(calldata) && !relayed,
-      committed: relayed,
-      // Step 04 done only after Creditcoin commit + chain status — not calldata alone.
-      accessResolved:
-        evidence.proofReady &&
-        status !== 'UNKNOWN' &&
-        statusSource === 'chain' &&
+    () =>
+      computeEvidenceSequence({
+        txHash: evidence.txHash,
+        proofReady: evidence.proofReady,
+        hasCalldata: Boolean(calldata),
         relayed,
-    }),
+        status,
+        statusSource,
+      }),
     [evidence.txHash, evidence.proofReady, calldata, relayed, status, statusSource],
   );
 
