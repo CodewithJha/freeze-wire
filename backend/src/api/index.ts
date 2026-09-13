@@ -44,12 +44,49 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown, requestId: string): void {
-  const payload = JSON.stringify(body);
+  const enriched =
+    body && typeof body === 'object' && !Array.isArray(body)
+      ? { ...(body as Record<string, unknown>), requestId }
+      : body;
+  const payload = JSON.stringify(enriched);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'X-Request-Id': requestId,
   });
   res.end(payload);
+}
+
+/** Strip secrets / internal dumps from client-facing ApiError messages. */
+export function sanitizeClientMessage(code: string, message: string): string {
+  if (
+    /PRIVATE_KEY|RELAY_GATE|API[_-]?KEY|Authorization|Bearer\s|0x[a-fA-F0-9]{64}\b|\/Users\/|\/home\/|ECONNREFUSED|stack|traceback/i.test(
+      message,
+    )
+  ) {
+    switch (code) {
+      case ApiErrorCode.RELAY_DISABLED:
+        return 'Worker relay unavailable; use client wallet submitProof';
+      case ApiErrorCode.UNAUTHORIZED:
+        return 'Relay authorization required';
+      case ApiErrorCode.CC3_RPC_FAILED:
+        return 'Creditcoin RPC unavailable';
+      case ApiErrorCode.ETH_RPC_FAILED:
+        return 'Ethereum RPC unavailable';
+      case ApiErrorCode.GAS_ESTIMATION_FAILED:
+        return 'Gas estimation failed';
+      case ApiErrorCode.TRANSACTION_BROADCAST_FAILED:
+        return 'Transaction broadcast failed';
+      case ApiErrorCode.TRANSACTION_REJECTED:
+        return 'Transaction rejected';
+      default:
+        return 'Request failed';
+    }
+  }
+  // Avoid leaking RPC URLs / absolute filesystem paths even when not caught above.
+  if (/https?:\/\/[^\s]+|\/var\/|\\\\/.test(message)) {
+    return 'Request failed';
+  }
+  return message;
 }
 
 function applyCors(req: IncomingMessage, res: ServerResponse, origins: string[]): void {
@@ -101,12 +138,12 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
       const header = req.headers['x-relay-gate'];
       const provided = typeof header === 'string' ? header : undefined;
       if (provided !== config.relayGate) {
-        throw new ApiError(ApiErrorCode.UNAUTHORIZED, 'Invalid or missing RELAY_GATE', 401, false);
+        throw new ApiError(ApiErrorCode.UNAUTHORIZED, 'Relay authorization required', 401, false);
       }
       return;
     }
     if (!isLocalhost(req)) {
-      throw new ApiError(ApiErrorCode.UNAUTHORIZED, 'Relay is localhost-only without RELAY_GATE', 401, false);
+      throw new ApiError(ApiErrorCode.UNAUTHORIZED, 'Relay authorization required', 401, false);
     }
   }
 
@@ -207,12 +244,23 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
           httpStatus: err.httpStatus,
           message: err.message,
         });
-        sendJson(res, err.httpStatus, err.toBody(), requestId);
+        // Client body: stable code + safe message + extras. Keep raw detail in logs only.
+        const clientMessage = sanitizeClientMessage(err.code, err.message);
+        sendJson(
+          res,
+          err.httpStatus,
+          {
+            ...err.toBody(),
+            message: clientMessage,
+          },
+          requestId,
+        );
         return;
       }
       log.error('api.unhandled', {
         requestId,
         message: err instanceof Error ? err.message : 'unknown',
+        stack: err instanceof Error ? err.stack : undefined,
       });
       sendJson(
         res,

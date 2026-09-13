@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import http from 'node:http';
 import { encodeFunctionData } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { createWorkerHandler } from '../src/api/index.js';
+import { createWorkerHandler, sanitizeClientMessage } from '../src/api/index.js';
 import { loadEnv, loadNetworks, resolveAppConfig, defaultNetworksPath } from '../src/config/index.js';
 import { createProofBuilderClient, ProofBuilderError } from '../src/clients/proofBuilder.js';
 import {
@@ -443,6 +443,62 @@ describe('T-API HTTP surface', () => {
 });
 
 describe('T-API-NOSETTER security', () => {
+  it('sanitizeClientMessage strips PRIVATE_KEY, RELAY_GATE, URLs, and 64-byte hex', () => {
+    assert.equal(
+      sanitizeClientMessage(ApiErrorCode.RELAY_DISABLED, 'RELAY_PRIVATE_KEY unset; use wallet'),
+      'Worker relay unavailable; use client wallet submitProof',
+    );
+    assert.equal(
+      sanitizeClientMessage(ApiErrorCode.UNAUTHORIZED, 'Invalid or missing RELAY_GATE'),
+      'Relay authorization required',
+    );
+    assert.equal(
+      sanitizeClientMessage(ApiErrorCode.GAS_ESTIMATION_FAILED, `sign failed key=${RELAY_KEY}`),
+      'Gas estimation failed',
+    );
+    assert.equal(
+      sanitizeClientMessage(ApiErrorCode.CC3_RPC_FAILED, 'connect ECONNREFUSED https://rpc.example/'),
+      'Creditcoin RPC unavailable',
+    );
+    assert.equal(
+      sanitizeClientMessage(ApiErrorCode.PROOF_BUILDER_FAILED, 'fetch https://proof.example failed'),
+      'Request failed',
+    );
+    assert.equal(sanitizeClientMessage(ApiErrorCode.INVALID_REQUEST, 'Malformed JSON body'), 'Malformed JSON body');
+  });
+
+  it('relay disabled and unauthorized responses never name RELAY_PRIVATE_KEY or RELAY_GATE', async () => {
+    const config = baseConfig({ relayPrivateKey: undefined });
+    const fetchImpl: typeof fetch = async () => new Response(JSON.stringify(sample), { status: 200 });
+    await withServer(config, fetchImpl, async (base) => {
+      const relay = await fetch(`${base}/v1/relay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txHash: DEMO_TX }),
+      });
+      assert.equal(relay.status, 404);
+      const body = (await relay.json()) as { code: string; message: string };
+      assert.equal(body.code, ApiErrorCode.RELAY_DISABLED);
+      assert.equal(body.message.includes('RELAY_PRIVATE_KEY'), false);
+      assert.equal(body.message.includes('RELAY_GATE'), false);
+      assert.match(body.message, /wallet submitProof/i);
+    });
+
+    const gated = baseConfig({ relayPrivateKey: undefined, relayGate: 'secret-gate' });
+    await withServer(gated, fetchImpl, async (base) => {
+      const denied = await fetch(`${base}/v1/relay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txHash: DEMO_TX }),
+      });
+      assert.equal(denied.status, 401);
+      const body = (await denied.json()) as { message: string };
+      assert.equal(body.message, 'Relay authorization required');
+      assert.equal(body.message.includes('RELAY_GATE'), false);
+      assert.equal(body.message.includes('secret-gate'), false);
+    });
+  });
+
   it('relayer key never appears in evidence/demo or health', () => {
     const config = baseConfig({ relayPrivateKey: RELAY_KEY });
     const demo = evidenceDemo(config);

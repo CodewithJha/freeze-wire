@@ -302,9 +302,15 @@ export async function relaySubmitProof(options: {
 
   if (!config.relayPrivateKey) {
     log?.info('relay.disabled', { to: calldata.to, dataLen: calldata.data.length });
-    throw new ApiError(ApiErrorCode.RELAY_DISABLED, 'RELAY_PRIVATE_KEY unset; use wallet submitProof', 404, false, {
-      submitProof: { to: calldata.to, data: calldata.data },
-    });
+    throw new ApiError(
+      ApiErrorCode.RELAY_DISABLED,
+      'Worker relay unavailable; use client wallet submitProof',
+      404,
+      false,
+      {
+        submitProof: { to: calldata.to, data: calldata.data },
+      },
+    );
   }
 
   const account = privateKeyToAccount(config.relayPrivateKey);
