@@ -11,7 +11,7 @@
 [![Creditcoin CC3](https://img.shields.io/badge/Creditcoin%20CC3-Testnet%20102031-10B981.svg?style=flat-square)](https://creditcoin.network)
 [![Attestcoin](https://img.shields.io/badge/Attestcoin-0x0FD2%20Precompile-6366F1.svg?style=flat-square)](https://docs.attestcoin.org)
 [![Foundry Tests](https://img.shields.io/badge/Foundry-93%20Passed%20%7C%201%20Skipped-success.svg?style=flat-square)](contracts/test)
-[![Backend Tests](https://img.shields.io/badge/Worker-31%20Passed-success.svg?style=flat-square)](backend/test)
+[![Backend Tests](https://img.shields.io/badge/Worker-33%20Passed-success.svg?style=flat-square)](backend/test)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind%204-61DAFB.svg?style=flat-square&logo=react)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Typecheck-3178C6.svg?style=flat-square&logo=typescript)](backend/)
 
@@ -353,7 +353,7 @@ freeze-wire/
 │   │   ├── attestcoin/            # Proof Builder HTTP client & index recovery
 │   │   ├── relay/                 # CC3 broadcast helper & calldata preparation
 │   │   └── discover/              # Ethereum event poller & scanner
-│   └── test/                      # 31 automated backend tests
+│   └── test/                      # 33 automated backend tests
 │
 ├── frontend/                      # Interactive React 19 + Three.js demo application
 │   ├── src/
@@ -411,7 +411,7 @@ Run the backend test suite and start the local proof relay server:
 ```bash
 cd backend
 npm ci
-npm test       # Runs 31 unit & integration tests
+npm test       # Runs 33 unit & integration tests
 npm run build
 npm start      # Starts HTTP server at http://127.0.0.1:8000
 ```
@@ -474,7 +474,7 @@ Public addresses and txs below are verified against local registries `deployment
 |:---|:---|:---:|
 | **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **Verified** (93 passed, 1 skipped) |
 | **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` Merkle path recovery | **Verified** |
-| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (31 passed) |
+| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (33 passed) |
 | **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js | **Built** |
 | **CC3 Testnet Deployment** | Live addresses + `submitProof` evidence above | **Live on chain 102031** |
 | **CC3 Mainnet Deployment** | Production mainnet | *Out of scope for this demo* |
