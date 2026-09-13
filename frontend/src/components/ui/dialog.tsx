@@ -40,9 +40,9 @@ export function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-[min(92vw,36rem)] -translate-x-1/2 -translate-y-1/2',
+          'fixed left-1/2 top-1/2 z-[60] w-[min(92vw,36rem)] -translate-x-1/2 -translate-y-1/2',
           'border border-fw-line-strong bg-fw-ink p-5 shadow-none',
-          'focus:outline-none',
+          'pointer-events-auto focus:outline-none',
           className,
         )}
         {...props}

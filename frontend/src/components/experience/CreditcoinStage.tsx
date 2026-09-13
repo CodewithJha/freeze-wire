@@ -35,7 +35,7 @@ export function CreditcoinStage({
             boundary.
           </h2>
           <p className="mt-5 max-w-sm text-[0.9375rem] leading-relaxed text-fw-mist">
-            Verified Ethereum evidence does not imply Creditcoin state. Until the ledger attests,
+            A ready proof bundle does not imply Creditcoin state. Until the ledger attests,
             access remains unsettled.
           </p>
         </div>
@@ -91,10 +91,10 @@ export function CreditcoinStage({
             {attested
               ? 'Ledger decision read from Creditcoin.'
               : relayAttempted && !relayed
-                ? 'Relay unavailable or pending — calldata may be required. Ledger still unset.'
+                ? 'Calldata prepared only — no Creditcoin transaction has been broadcast yet.'
                 : proofReady
                   ? 'Proof ready. Creditcoin has not yet established eligibility for this account.'
-                  : 'No verified bundle — nothing to commit.'}
+                  : 'No proof bundle — nothing to commit.'}
           </p>
 
           <dl className="mt-8 space-y-3 border-t border-fw-line pt-5">

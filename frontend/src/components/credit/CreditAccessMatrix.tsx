@@ -112,10 +112,10 @@ export function CreditAccessMatrix({
         >
           {deploymentMode === 'LIVE' && 'LIVE — chain-backed GatedCreditLine'}
           {deploymentMode === 'NOT_DEPLOYED' &&
-            'NOT_DEPLOYED — set VITE_CREDIT_LINE_ADDRESS + VITE_LEDGER_ADDRESS after CC3 deploy'}
+            'NOT_DEPLOYED — credit-line addresses not configured after CC3 deploy'}
           {deploymentMode === 'UNAVAILABLE' && 'UNAVAILABLE — addresses set but CC3 RPC failed'}
           {deploymentMode === 'SIMULATION' &&
-            'SIMULATION — VITE_ALLOW_SIMULATION=1 (not on-chain enforcement)'}
+            'SIMULATION — simulation mode enabled (not on-chain enforcement)'}
         </p>
       </div>
 

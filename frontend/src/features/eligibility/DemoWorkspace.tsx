@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Address } from 'viem';
+import type { Address, Hex } from 'viem';
 import type { CreditActionId } from '@/components/credit/CreditAccessMatrix';
 import {
   EvidenceRecord,
@@ -14,7 +14,7 @@ import { HeroStage } from '@/components/experience/HeroStage';
 import { ProofMoment } from '@/components/experience/ProofMoment';
 import { StorySpine } from '@/components/experience/StorySpine';
 import { SystemStatus } from '@/components/status/SystemStatus';
-import { CalldataDialog } from '@/components/transaction/CalldataDialog';
+import { CalldataDialog, type BroadcastPhase } from '@/components/transaction/CalldataDialog';
 import { EvidenceControls } from '@/components/transaction/EvidenceControls';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -33,8 +33,10 @@ import { isAddress, isTxHash } from '@/lib/formatting';
 import { useHealth } from '@/hooks/useHealth';
 import {
   attemptCreditAction,
+  broadcastSubmitProofCalldata,
   connectWallet,
 } from '@/features/credit-line/actions';
+import { WalletBroadcastError } from '@/lib/walletErrors';
 import { resolveDeploymentMode } from '@/lib/deployment';
 
 type CalldataPayload = { to: string; data: string } | null;
@@ -89,6 +91,9 @@ export function DemoWorkspace() {
   const [actionResult, setActionResult] = useState<string | null>(null);
   const [wallet, setWallet] = useState<Address | null>(null);
   const [calldata, setCalldata] = useState<CalldataPayload>(null);
+  const [calldataOpen, setCalldataOpen] = useState(false);
+  const [broadcastPhase, setBroadcastPhase] = useState<BroadcastPhase>('PREPARED');
+  const [broadcastError, setBroadcastError] = useState<string | null>(null);
   /** Spine labels follow the experience section in view — not a parallel product SM. */
   const [wireStage, setWireStage] = useState<WireStage>('ethereum');
 
@@ -142,10 +147,16 @@ export function DemoWorkspace() {
     () => ({
       evidenceLoaded: Boolean(evidence.txHash),
       proofReady: evidence.proofReady,
-      relayAttempted: relayAttempted || relayed || Boolean(calldata),
-      accessResolved: status !== 'UNKNOWN' && statusSource === 'chain',
+      calldataPrepared: Boolean(calldata) && !relayed,
+      committed: relayed,
+      // Only after verify — ambient ledger RESTRICTED from TRACE alone must not skip the story.
+      accessResolved:
+        evidence.proofReady &&
+        status !== 'UNKNOWN' &&
+        statusSource === 'chain' &&
+        (relayed || Boolean(calldata)),
     }),
-    [evidence.txHash, evidence.proofReady, relayAttempted, relayed, calldata, status, statusSource],
+    [evidence.txHash, evidence.proofReady, calldata, relayed, status, statusSource],
   );
 
   const refreshStatus = useCallback(async (address: string) => {
@@ -174,6 +185,9 @@ export function DemoWorkspace() {
     setRelayed(false);
     setRelayAttempted(false);
     setCalldata(null);
+    setCalldataOpen(false);
+    setBroadcastPhase('PREPARED');
+    setBroadcastError(null);
     setActionResult(null);
     try {
       const demo = await api.evidenceDemo();
@@ -238,7 +252,7 @@ export function DemoWorkspace() {
         proofReady: true,
         block: prev.block ?? body.headerNumber,
       }));
-      setBanner('PROOF VERIFIED — bundle ready for Creditcoin submitProof.');
+      setBanner('PROOF BUNDLE READY — HTTP prove succeeded; not yet on Creditcoin.');
     } catch (err) {
       setProof(null);
       setEvidence((prev) => ({
@@ -261,10 +275,14 @@ export function DemoWorkspace() {
     setRelaying(true);
     setBanner(null);
     setCalldata(null);
+    setCalldataOpen(false);
+    setBroadcastPhase('PREPARED');
+    setBroadcastError(null);
     try {
       const body = await api.relay(txHash);
       setRelayed(true);
       setRelayAttempted(true);
+      setBroadcastPhase('COMMITTED');
       setEvidence((prev) => ({
         ...prev,
         ctcTx: body.ctcTx,
@@ -282,6 +300,9 @@ export function DemoWorkspace() {
       setRelayAttempted(true);
       if (err instanceof WorkerApiError && err.httpStatus === 404 && err.body.submitProof) {
         setCalldata(err.body.submitProof);
+        setCalldataOpen(true);
+        setBroadcastPhase('PREPARED');
+        setBroadcastError(null);
         setBanner(productErrorMessage(err));
       } else if (
         err instanceof WorkerApiError &&
@@ -289,6 +310,9 @@ export function DemoWorkspace() {
         err.body.submitProof
       ) {
         setCalldata(err.body.submitProof);
+        setCalldataOpen(true);
+        setBroadcastPhase('PREPARED');
+        setBroadcastError(null);
         setBanner(productErrorMessage(err));
       } else {
         setBanner(productErrorMessage(err));
@@ -297,6 +321,49 @@ export function DemoWorkspace() {
       setRelaying(false);
     }
   }, [txHash, counterparty, refreshStatus]);
+
+  const broadcastPreparedCalldata = useCallback(async () => {
+    if (!calldata?.to || !calldata.data) return;
+    setBroadcastError(null);
+    setBanner(null);
+    setBroadcastPhase('AWAITING_WALLET');
+    try {
+      const { hash } = await broadcastSubmitProofCalldata({
+        to: calldata.to as Address,
+        data: calldata.data as Hex,
+        onProgress: (step) => {
+          if (step === 'AWAITING_WALLET') setBroadcastPhase('AWAITING_WALLET');
+          else if (step === 'BROADCASTING') setBroadcastPhase('BROADCASTING');
+          else if (step === 'CONFIRMING') setBroadcastPhase('CONFIRMING');
+        },
+      });
+      // Only receipt success reaches here — hash alone is never COMMITTED.
+      setBroadcastPhase('COMMITTED');
+      setRelayed(true);
+      setRelayAttempted(true);
+      setCalldata(null);
+      setCalldataOpen(false);
+      setEvidence((prev) => ({
+        ...prev,
+        ctcTx: hash,
+        proofReady: true,
+      }));
+      if (counterparty) {
+        await refreshStatus(counterparty);
+      }
+      setBanner('SUBMITTED TO CREDITCOIN — wallet broadcast confirmed.');
+    } catch (err) {
+      const message = productErrorMessage(err);
+      if (err instanceof WalletBroadcastError && err.code === 'WALLET_REJECTED') {
+        setBroadcastPhase('WALLET_REJECTED');
+      } else {
+        setBroadcastPhase('FAILED');
+      }
+      setBroadcastError(message);
+      setBanner(message);
+      // Keep dialog open with calldata — prepared ≠ committed.
+    }
+  }, [calldata, counterparty, refreshStatus]);
 
   const onCreditAction = useCallback(
     async (id: CreditActionId) => {
@@ -366,7 +433,7 @@ export function DemoWorkspace() {
             <ProofMoment
               evidence={evidence}
               proving={proving}
-              verified={evidence.proofReady}
+              bundleReady={evidence.proofReady}
             />
           </div>
 
@@ -441,6 +508,11 @@ export function DemoWorkspace() {
                     canProve={isTxHash(txHash)}
                     canRelay={Boolean(proof) || evidence.proofReady}
                     sequence={sequence}
+                    onOpenCalldata={
+                      calldata && !relayed
+                        ? () => setCalldataOpen(true)
+                        : undefined
+                    }
                   />
 
                   <EvidenceRecord evidence={evidence} />
@@ -464,12 +536,25 @@ export function DemoWorkspace() {
       </div>
 
       <CalldataDialog
-        open={Boolean(calldata)}
+        open={calldataOpen && Boolean(calldata)}
         onOpenChange={(open) => {
-          if (!open) setCalldata(null);
+          setCalldataOpen(open);
+          if (!open && broadcastPhase !== 'COMMITTED') {
+            // Closing does not clear prepared calldata; reset only ephemeral UI phase noise.
+            if (
+              broadcastPhase === 'WALLET_REJECTED' ||
+              broadcastPhase === 'FAILED' ||
+              broadcastPhase === 'AWAITING_WALLET'
+            ) {
+              setBroadcastPhase('PREPARED');
+            }
+          }
         }}
         to={calldata?.to ?? ''}
         data={calldata?.data ?? ''}
+        phase={broadcastPhase}
+        phaseError={broadcastError}
+        onBroadcast={() => void broadcastPreparedCalldata()}
       />
     </TooltipProvider>
   );

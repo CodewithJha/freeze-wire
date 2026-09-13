@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils';
 export type EvidenceSequence = {
   evidenceLoaded: boolean;
   proofReady: boolean;
-  relayAttempted: boolean;
+  /** Calldata prepared for client wallet — does NOT mean committed. */
+  calldataPrepared: boolean;
+  /** True only after a confirmed Creditcoin submitProof receipt. */
+  committed: boolean;
   accessResolved: boolean;
 };
 
@@ -23,6 +26,7 @@ export function EvidenceControls({
   canProve,
   canRelay,
   sequence,
+  onOpenCalldata,
 }: {
   txHash: string;
   onTxHashChange: (v: string) => void;
@@ -35,6 +39,7 @@ export function EvidenceControls({
   canProve: boolean;
   canRelay: boolean;
   sequence: EvidenceSequence;
+  onOpenCalldata?: () => void;
 }) {
   const valid = isTxHash(txHash);
 
@@ -58,15 +63,17 @@ export function EvidenceControls({
     },
     {
       n: '03',
-      label: 'Commit to Creditcoin',
-      done: sequence.relayAttempted,
-      active: sequence.proofReady && !sequence.relayAttempted,
+      label: sequence.calldataPrepared && !sequence.committed
+        ? 'Commit to Creditcoin (awaiting wallet)'
+        : 'Commit to Creditcoin',
+      done: sequence.committed,
+      active: sequence.proofReady && !sequence.committed,
     },
     {
       n: '04',
       label: 'Test access',
       done: sequence.accessResolved,
-      active: sequence.relayAttempted && !sequence.accessResolved,
+      active: (sequence.committed || sequence.calldataPrepared) && !sequence.accessResolved,
     },
   ];
 
@@ -95,7 +102,11 @@ export function EvidenceControls({
                 )}
               >
                 {step.label}
-                {step.done ? ' · done' : null}
+                {step.done
+                  ? ' · done'
+                  : step.n === '03' && sequence.calldataPrepared && !sequence.committed
+                    ? ' · not broadcast'
+                    : null}
               </span>
             </li>
           ))}
@@ -125,6 +136,11 @@ export function EvidenceControls({
         <Button type="button" onClick={onRelay} disabled={!canRelay || relaying}>
           {relaying ? 'COMMITTING…' : 'COMMIT TO CREDITCOIN'}
         </Button>
+        {onOpenCalldata ? (
+          <Button type="button" variant="ghost" onClick={onOpenCalldata}>
+            OPEN WALLET PATH
+          </Button>
+        ) : null}
       </div>
     </div>
   );

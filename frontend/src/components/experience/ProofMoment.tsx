@@ -13,14 +13,15 @@ type Fragment = {
 export function ProofMoment({
   evidence,
   proving,
-  verified,
+  bundleReady,
 }: {
   evidence: EvidenceFields;
   proving: boolean;
-  verified: boolean;
+  /** True after HTTP prove returns a bundle — not on-chain verify. */
+  bundleReady: boolean;
 }) {
   const reduceMotion = useReducedMotion();
-  const showBundle = verified || proving;
+  const showBundle = bundleReady || proving;
 
   const fragments: Fragment[] = [
     {
@@ -64,8 +65,8 @@ export function ProofMoment({
     {
       id: 'receipt',
       label: 'receipt',
-      value: verified ? 'in bundle' : '—',
-      ready: verified,
+      value: bundleReady ? 'in bundle' : '—',
+      ready: bundleReady,
     },
   ];
 
@@ -83,15 +84,15 @@ export function ProofMoment({
             </h2>
           </div>
           <p className="max-w-xs text-[0.9375rem] leading-relaxed text-fw-mist">
-            Fetch proof only claims success when the worker returns a verified bundle. Nothing here
-            is simulated.
+            Fetch proof only claims success when the worker returns a proof bundle. Nothing here
+            is simulated — and a ready bundle is not yet a Creditcoin attestation.
           </p>
         </div>
 
         <div className="mt-14">
           {/*
             Crosshair is sized to the fragment grid only. State typography sits outside
-            so the vertical connector terminates before VERIFIED — no cut-through.
+            so the vertical connector terminates before the status label — no cut-through.
           */}
           {showBundle ? (
             <div className="relative overflow-hidden" data-proof-fragment-region>
@@ -113,13 +114,13 @@ export function ProofMoment({
                     animate={
                       reduceMotion
                         ? { opacity: 1, scale: 1 }
-                        : verified
+                        : bundleReady
                           ? { opacity: 1, scale: 1 }
                           : { opacity: 0.85, scale: 0.98 }
                     }
                     transition={{
                       duration: 0.5,
-                      delay: verified && !reduceMotion ? i * 0.04 : 0,
+                      delay: bundleReady && !reduceMotion ? i * 0.04 : 0,
                       ease: [0.22, 1, 0.36, 1],
                     }}
                   >
@@ -155,15 +156,15 @@ export function ProofMoment({
           <div
             className={cn(
               'mt-10 flex justify-center border-t pt-8',
-              verified ? 'border-fw-signal/35' : 'border-fw-line',
+              bundleReady ? 'border-fw-signal/35' : 'border-fw-line',
             )}
           >
             <motion.p
-              key={verified ? 'verified' : proving ? 'proving' : 'awaiting'}
+              key={bundleReady ? 'bundle-ready' : proving ? 'proving' : 'awaiting'}
               className={cn(
-                'fw-display font-semibold tracking-[-0.04em]',
-                verified
-                  ? 'text-[clamp(2.5rem,8vw,5rem)] text-fw-signal'
+                'fw-display text-center font-semibold tracking-[-0.04em]',
+                bundleReady
+                  ? 'text-[clamp(1.75rem,5.5vw,3.75rem)] text-fw-signal'
                   : proving
                     ? 'text-[clamp(2rem,6vw,3.5rem)] text-fw-mist'
                     : 'text-[clamp(1.25rem,3.5vw,1.75rem)] font-medium tracking-[0.08em] text-fw-fog',
@@ -171,11 +172,15 @@ export function ProofMoment({
               initial={reduceMotion ? false : { opacity: 0.3, letterSpacing: '0.12em' }}
               animate={{
                 opacity: 1,
-                letterSpacing: verified ? '-0.04em' : proving ? '-0.03em' : '0.08em',
+                letterSpacing: bundleReady ? '-0.04em' : proving ? '-0.03em' : '0.08em',
               }}
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             >
-              {verified ? 'VERIFIED' : proving ? 'PROVING' : 'AWAITING PROOF'}
+              {bundleReady
+                ? 'PROOF BUNDLE READY'
+                : proving
+                  ? 'PROVING'
+                  : 'AWAITING PROOF'}
             </motion.p>
           </div>
         </div>
