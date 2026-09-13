@@ -31,7 +31,8 @@ Owner `setExpectedChainKey` / `setWindow` residuals are **DOCUMENT ONLY** in thi
 | Oversized POST | Body > 1 MiB | 413 | Rejected | `backend` body-size tests | VERIFIED |
 | Unbounded discover scan | One-sided `fromBlock`/`toBlock` | 400 | Rejected | `discover.test.ts` / `reliability.test.ts` | VERIFIED |
 | Rate-limit map growth | Expired buckets | Pruned periodically | `pruneRateBuckets` | `reliability.test.ts` | VERIFIED |
-| PB/RPC timeout flap | HTTP 5xx / timeout | Bounded retries then fail | Retries ≤2 | `retry.ts` + `reliability.test.ts` | VERIFIED |
+| PB/RPC timeout flap | HTTP 5xx / timeout / transport | Bounded retries then fail | Retries ≤2; transport `retriable` honored | `retry.ts` + `reliability.test.ts` | VERIFIED |
+| Worker invents Restricted | Relay-only / junk proof | On-chain reject; no status write | No setter; worker encodes `submitProof` only | Architecture + `SecurityBoundaries` | VERIFIED |
 
 ---
 
@@ -45,6 +46,7 @@ Owner `setExpectedChainKey` / `setWindow` residuals are **DOCUMENT ONLY** in thi
 | GatedCreditLine CEI polish | Reentrancy via malicious ERC-20 | MockUSD trusted demo asset; CEI rewrite = redeploy risk | RESIDUAL |
 | Discovery completeness | Missed eth_getLogs | Worker may miss; must not invent candidates | RESIDUAL |
 | Relayer key / gas grief | Exhaust local relay | Localhost / optional `RELAY_GATE`; not eligibility authority | RESIDUAL (ops) |
+| Reentrancy on `processed` check-then-act | Would need callback from `nativeVerifier` | Production `0x0FD2` is not an attacker callback surface | OUT OF SCOPE / residual ops |
 
 ### Optional live `setWindow` (ops note — not executed here)
 
@@ -56,6 +58,12 @@ If a funded **owner** key is available in a locked-down shell (never print the k
 4. Record public tx hash in evidence — **do not** commit private keys.
 
 This push **does not** perform that call (avoid ops risk mid-submission).
+
+---
+
+## Pre-submission red-team (re-verified)
+
+Read-only pass confirmed: **no exploitable Attestcoin → ledger → credit-line bypass**. Restricted extractive ops still require a newer proven Circle `UnBlacklisted` (or never Restricted). Owner/window/CEI remain residuals only. Matrix rows above re-confirmed against named Foundry / backend tests — update as re-verify, not as a new finding.
 
 ---
 
@@ -71,3 +79,4 @@ BlockProver proves **inclusion + continuity** of the submitted encoded transacti
 - Normative model: [`SECURITY_MODEL.md`](./SECURITY_MODEL.md), [`THREAT_MODEL.md`](./THREAT_MODEL.md)
 - Test IDs: [`TEST_STRATEGY.md`](./TEST_STRATEGY.md)
 - Live Attestcoin facts: [`ATTESTCOIN_EVIDENCE.md`](./ATTESTCOIN_EVIDENCE.md)
+- Demo ops: [`DEMO_RUNBOOK.md`](./DEMO_RUNBOOK.md)

@@ -1,8 +1,8 @@
 # FREEZEWIRE — TECHNICAL AUDIT
 
-**Generated:** 2026-09-13 (IST evening, stage-2 push)
+**Generated:** 2026-09-13 (IST evening, pre-submission red-team consolidation)
 **Workspace:** `/Users/priyanshujha/Projects/freeze-wire`
-**Basis:** FINAL repo state after packaging evidence, backend reliability, Foundry named cases, FE Vitest, docs.
+**Basis:** FINAL repo state after five parallel audits (product/docs, FE honesty, demo ops, security red-team, backend reliability) + high-confidence low-risk fixes.
 **Do not copy prior audit scores** — recomputed below. Labels: VERIFIED / ESTIMATE / INFERENCE / UNKNOWN.
 
 **Hard rules (unchanged):** no invented protocol facts; no secrets; no `setStatus` / eligibility DB / rotatable emitter; Attestcoin load-bearing; live CC3 deploy preserved (no redeploy).
@@ -14,34 +14,36 @@
 | Field | Value | Label |
 |---|---|---|
 | Ship decision | **SHIP WITH KNOWN RISKS** | OPINION |
-| Technical score | **~87/100** | ESTIMATE |
-| Overall (if packaging incomplete) | **~74/100** | ESTIMATE |
+| Technical score | **~88/100** | ESTIMATE |
+| Overall (if packaging incomplete) | **~75/100** | ESTIMATE |
 | Confidence | Medium-high on tech; packaging-gated on overall | ESTIMATE |
-| Previous tech (stage-1) | ~84/100 | HISTORICAL |
-| Delta | **+3** tech (packaging + FE tests + worker reliability + named adversarial cases) | ESTIMATE |
+| Previous tech (stage-2) | ~87/100 | HISTORICAL |
+| Delta | **+1** tech (honesty Vitest expansion, DEMO_RUNBOOK, README differentiation/counts, RPC transport retry correctness, security re-verify) | ESTIMATE |
 
-**Further polish:** Not forced. Tech can defend mid-to-high 80s. Further polish still blocked primarily by **human packaging submit + deck PDF + demo video**, plus residual owner/window/CEI disclosures.
+**Further polish:** **Not forced.** Tech can defend high-80s. Further polish still blocked primarily by **human packaging submit + deck PDF + demo video**, plus residual owner/window/CEI disclosures.
+
+**NO FURTHER HIGH-ROI PROTOCOL CHANGES** remain without redeploy or scope expansion (indexer / CEI rewrite / immutable chainKey).
 
 ### Strongest 5
 1. Attestcoin load-bearing / removal test
 2. Live CC3 Restricted + draw revert evidence (committed public JSON)
-3. Consumer-check security matrix + Foundry T-SEC-*
-4. Docs honesty (ABI, topics, PROOF BUNDLE READY)
-5. Worker fail-closed boundaries (no setter; body/range/txIndex)
+3. Consumer-check security matrix + Foundry T-SEC-* (red-team re-verified; no bypass)
+4. Docs honesty (4-way differentiation, DEMO_RUNBOOK, PROOF BUNDLE READY)
+5. Worker fail-closed boundaries (no setter; body/range/txIndex; transport retries)
 
 ### Weakest 5
 1. packaging submit / video / deck UNKNOWN
-2. Submission packaging completeness
+2. Submission packaging completeness (human)
 3. Owner-tunable chainKey/window (documented residual)
 4. Unbounded proof window (disclosed)
-5. Demo already-RESTRICTED choreography friction
+5. Demo already-RESTRICTED choreography (mitigated by runbook; still presenter skill)
 
 ### Remaining P0
 - Human: confirm packaging platform **Submit** with Integration Summary + GH + deck + video before deadline
 
 ### Remaining P1
 - Owner/window residuals (DOCUMENT ONLY — no redeploy)
-- Empty RELAY → wallet path on stage
+- Empty RELAY → wallet path on stage (rehearse)
 - CEI polish deferred
 
 ---
@@ -79,75 +81,25 @@ Layout: `contracts/` · `backend/` · `frontend/` · `docs/` · `config/` · `sc
 | EligibilityLedger | `0xde64d5037cA820D4aDFa703C4FaF5451be840C9d` |
 | GatedCreditLine | `0xB04fFca20e0a992474E6AD501A061973dC9Ed340` |
 | Deploy block | `5479278` |
-| Window | `0/0` unbounded (disclosed) |
+| Window | `(0,0)` unbounded — disclosed residual |
 | Demo ETH tx | `0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787` |
-| Restricted account | `0xe05F529f5284D75624eBa386CB716928c3b54A2A` |
-| Eligible actor | `0x6b07454d70896cad371982A57037933e24F4cD52` |
-| submitProof | `0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45` |
-| statusOf(demo) | `RESTRICTED` |
-| `Restricted()` | `0xccc08913` |
-
-**Label:** VERIFIED against committed `deployments/demo-evidence-public.json` + README. **Redeploy:** not performed this stage.
+| submitProof tx | `0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45` |
+| Account B | `0xe05F…` → `RESTRICTED` |
+| Account A | `0x6b0745…` → eligible / fail-open demo |
 
 ---
 
-## 4. Current architecture
+## 4–7. Architecture / Attestcoin / security
 
-```text
-Ethereum USDC Blacklisted / UnBlacklisted
-  → Proof Builder bundle (untrusted)
-  → EligibilityLedger.submitProof (permissionless)
-  → BlacklistVerifier → 0x0FD2 verifyAndEmit (inclusion + continuity ONLY)
-  → consumer checks (status, emitter, event, account, chainKey, window)
-  → ledger write + replay key
-  → GatedCreditLine.statusOf → Restricted() on extractive ops
-```
+Unchanged spine: ETH fact → Proof Builder → `0x0FD2` → `BlacklistVerifier` → `EligibilityLedger` → `GatedCreditLine`.
 
-Boundaries: PB/worker ≠ authority · 0x0FD2 ≠ receipt/emitter/topic/account · ledger ≠ credit math · UI ≠ eligibility oracle.
-
----
-
-## 5. Attestcoin load-bearing analysis
-
-| Question | Answer | Label |
-|---|---|---|
-| What Attestcoin / 0x0FD2 proves | Inclusion + continuity of encoded tx vs attested headers | VERIFIED (docs + design) |
-| What FreezeWire verifies independently | Receipt status, emitter, topic allowlist, account from topic[1], chainKey, window, replay, ordering | VERIFIED (Foundry) |
-| Why backend cannot forge Restricted | No setter API; on-chain path required | VERIFIED |
-| Why frontend cannot forge | Status from chain; accessResolved requires `relayed` | VERIFIED (code + Vitest) |
-| Removal test | Without 0x0FD2 success → no RESTRICTED write | VERIFIED (design + `ProofRejected` tests) |
-
----
-
-## 6. Creditcoin integration analysis
-
-External Circle fact → Attestcoin proof → **Creditcoin-local** eligibility + gated credit primitive. Value is counterparty enforcement on CC3 credit ops, not “we called an API.” CEL freezes instruments; FreezeWire freezes counterparties after proven Blacklisted.
-
----
-
-## 7. Security invariants
-
-| ID | Invariant | Status |
-|----|-----------|--------|
-| INV-1 | Backend never authorizes Restricted | VERIFIED |
-| INV-2 | Writes require `0x0FD2` success | VERIFIED |
-| INV-3 | Immutable emitter + Blacklisted/UnBlacklisted only | VERIFIED |
-| INV-4 | Account from topic[1] | VERIFIED |
-| INV-5 | Failed receipts never write | VERIFIED |
-| INV-6 | Replay keys unique | VERIFIED |
-| INV-7/8 | Selective financial gating + exits | VERIFIED |
-| INV-9 | No owner `setStatus` | VERIFIED |
-| INV-10 | UI/RPC/PB not oracles | VERIFIED (design) |
-
-Evidence: `docs/SECURITY_EVIDENCE.md` (attack input / expected / actual / tests).
-
-**Security score (ESTIMATE):** **87/100** (residuals: owner chainKey/window, CEI, unbounded window — DOCUMENT ONLY).
+Security red-team (pre-submission pass): **no exploitable Attestcoin/ledger/credit-line bypass.** Owner/window/CEI = residual only. Matrix in `docs/SECURITY_EVIDENCE.md` re-confirmed.
 
 ---
 
 ## 8. Threat matrix (summary)
 
-≥20 threats covered in `SECURITY_EVIDENCE.md` including impostor emitter, wrong topic, failed receipt, wrong chainKey, window, forged txIndex, invalid Merkle sibling, corrupted continuity, replay, ordering, no setter, Restricted draw, PB lie, oversized POST, one-sided discover, rate-limit prune, PB/RPC retries.
+≥20 threats in `SECURITY_EVIDENCE.md` including impostor emitter, wrong topic, failed receipt, wrong chainKey, window, forged txIndex, invalid Merkle sibling, corrupted continuity, replay, ordering, no setter, Restricted draw, PB lie, oversized POST, one-sided discover, rate-limit prune, PB/RPC retries (transport flaps now retried).
 
 ---
 
@@ -156,24 +108,23 @@ Evidence: `docs/SECURITY_EVIDENCE.md` (attack input / expected / actual / tests)
 | Suite | Result |
 |---|---|
 | Foundry | **95 passed**, 0 failed, **1 skipped** |
-| Backend | **44 passed**, 0 failed |
-| Frontend Vitest | **5 passed**, 0 failed |
-| Frontend build | **ok** |
-| `git diff --check` | clean (after whitespace fixes) |
+| Backend | **45 passed**, 0 failed |
+| Frontend Vitest | **17 passed**, 0 failed |
+| Frontend build | run at commit time if dirty |
+| Live redeploy | **not performed** (preserved) |
 
 ---
 
-## 10. What changed in stage-2 (vs ~84)
+## 10. What changed in this consolidation
 
 | Area | Change |
 |------|--------|
-| Packaging | `.gitignore` allows `*-public.json`; commit demo evidence/proof public files |
-| Docs | Badge 93→95 / Worker 33→44; Integration Summary/DEPLOYMENT_PLAN gitignore language; `IMPROVEMENT_PLAN.md`; SECURITY_EVIDENCE upgrade; window ops note |
-| Backend | Bounded PB/RPC retries; rate-limit prune + Retry-After; discover both-or-neither; lifecycle logs; reliability tests |
-| Foundry | `test_invalidMerkleSibling_revertsProofRejected`, `test_corruptedContinuity_revertsProofRejected` |
-| Frontend | Vitest+RTL honesty tests; `computeEvidenceSequence`; CI `npm test` |
+| README | Body counts 95/45; 4-way Admin/API/CEL/FreezeWire box; badges 45/17 |
+| Docs | `DEMO_RUNBOOK.md`; frontend README two-account honesty; TEST_STRATEGY + DEMO_SPEC pointers; SECURITY_EVIDENCE re-verify + residual note |
+| Frontend | +12 honesty Vitests (accessResolved edges, RELAY_DISABLED, AccessConsequence LIVE/SIM, CreditcoinStage, EvidenceControls, CalldataDialog phase) |
+| Backend | JSON-RPC `isRetriable` honors `RpcTransportError.retriable` (fixes `fetch failed` never retrying) + unit case |
 
-**Skipped (by design):** redeploy, CEI rewrite, immutable chainKey, full indexer, Playwright e2e, fake ELIGIBLE→RESTRICTED, live `setWindow` call.
+**Skipped (by design):** redeploy, CEI rewrite, immutable chainKey, full indexer, Playwright e2e, fake ELIGIBLE→RESTRICTED, live `setWindow` call, health probe budget split (ops nicety only).
 
 ---
 
@@ -185,23 +136,23 @@ Evidence: `docs/SECURITY_EVIDENCE.md` (attack input / expected / actual / tests)
 | Technical Depth | 86 | Full proof→ledger→gate path | Window/owner residuals |
 | Attestcoin | 91 | Load-bearing + evidence docs | — |
 | Creditcoin | 86 | Live CC3 enforcement | Testnet-only |
-| Smart Contracts | 87 | +2 named ProofRejected cases | CEI residual |
-| Security | 87 | Expanded matrix | Owner/window |
-| Backend | 86 | Retries/prune/discover/logs | Not full indexer |
-| Frontend | 84 | Vitest honesty P0 | Thin coverage |
-| UX | 82 | Honest PROOF BUNDLE READY | Wallet friction |
+| Smart Contracts | 87 | Named ProofRejected / T-SEC | CEI residual |
+| Security | 88 | Red-team re-verify; no bypass | Owner/window |
+| Backend | 87 | Transport retry correctness | Not full indexer |
+| Frontend | 86 | 17 honesty Vitests | Thin e2e |
+| UX | 83 | Honest PROOF BUNDLE READY | Wallet friction |
 | Innovation | 80 | Attestcoin-required gate | Not novel DeFi market |
-| Differentiation | 80 | vs CEL / score clones | Messaging still needed live |
+| Differentiation | 84 | README 4-way + CEL callout | Live verbal delivery |
 | Real Functionality | 88 | Live Restricted + draw revert | Demo already restricted |
 | Live Deployment | 90 | Preserved; public JSON committed | Window 0/0 |
-| Reliability | 84 | Retries + caps | Discovery residual |
+| Reliability | 85 | Retries + caps | Discovery residual |
 | Scalability | 72 | Architecture clear | No indexer |
-| Testing | 86 | 95/44/5 | No Playwright |
-| Documentation | 90 | Evidence + change plan | — |
-| Demo | 78 | Two-account script | Human rehearsal |
+| Testing | 88 | 95/45/17 | No Playwright |
+| Documentation | 92 | Runbook + evidence + differentiation | — |
+| Demo | 82 | Runbook + two-account script | Human rehearsal |
 | Product | 76 | Clear ICP | Demo scope |
 
-**Weighted tech overall: ~87.** Overall release score still packaging-gated.
+**Weighted tech overall: ~88.** Overall release score still packaging-gated.
 
 ---
 
@@ -225,8 +176,9 @@ Evidence: `docs/SECURITY_EVIDENCE.md` (attack input / expected / actual / tests)
 | P1 | Owner setExpectedChainKey/setWindow | RESIDUAL documented |
 | P1 | Window 0/0 | RESIDUAL documented |
 | P2 | GatedCreditLine CEI | DEFERRED |
-| P2 | Discovery may miss events | RESIDUAL mitigated (no one-sided scans) |
+| P2 | Discovery may miss events | RESIDUAL mitigated |
 | P3 | Vitest motion `initial` DOM warning | Cosmetic |
+| P3 | Health probe shares full retry budget | ACCEPTABLE ops |
 
 ---
 
@@ -234,12 +186,13 @@ Evidence: `docs/SECURITY_EVIDENCE.md` (attack input / expected / actual / tests)
 
 **SHIP WITH KNOWN RISKS.**
 
-Tech is stronger than stage-1 (~84→~87) without touching live Attestcoin→Creditcoin evidence. Do **not** claim a polished overall score until optional packaging is confirmed by a human.
+Tech is slightly stronger than stage-2 (~87→~88) with **no protocol / redeploy changes**. Do **not** claim a polished overall score until optional packaging is confirmed by a human.
 
 ---
 
 ## Related
 
-- Change plan: [`docs/IMPROVEMENT_PLAN.md`](./IMPROVEMENT_PLAN.md)
-- Security matrix: [`docs/SECURITY_EVIDENCE.md`](./SECURITY_EVIDENCE.md)
+- Change plan: [`docs/IMPROVEMENT_PLAN.md`](./docs/IMPROVEMENT_PLAN.md)
+- Security matrix: [`docs/SECURITY_EVIDENCE.md`](./docs/SECURITY_EVIDENCE.md)
+- Demo ops: [`docs/DEMO_RUNBOOK.md`](./docs/DEMO_RUNBOOK.md)
 - Public evidence: `deployments/demo-evidence-public.json`, `deployments/demo-proof-public.json`

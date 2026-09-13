@@ -11,8 +11,8 @@
 [![Creditcoin CC3](https://img.shields.io/badge/Creditcoin%20CC3-Testnet%20102031-10B981.svg?style=flat-square)](https://creditcoin.network)
 [![Attestcoin](https://img.shields.io/badge/Attestcoin-0x0FD2%20Precompile-6366F1.svg?style=flat-square)](https://docs.attestcoin.org)
 [![Foundry Tests](https://img.shields.io/badge/Foundry-95%20Passed%20%7C%201%20Skipped-success.svg?style=flat-square)](contracts/test)
-[![Backend Tests](https://img.shields.io/badge/Worker-44%20Passed-success.svg?style=flat-square)](backend/test)
-[![Frontend Tests](https://img.shields.io/badge/Frontend-5%20Vitest-success.svg?style=flat-square)](frontend/src)
+[![Backend Tests](https://img.shields.io/badge/Worker-45%20Passed-success.svg?style=flat-square)](backend/test)
+[![Frontend Tests](https://img.shields.io/badge/Frontend-17%20Vitest-success.svg?style=flat-square)](frontend/src)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind%204-61DAFB.svg?style=flat-square&logo=react)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Typecheck-3178C6.svg?style=flat-square&logo=typescript)](backend/)
 
@@ -69,7 +69,7 @@ A 5-stage verification spine in smart contracts validates receipt status, enforc
 └──────────────────────────────┘    └────────────────────────┘    └─────────────────────────────┘
 ```
 
-> **Key Distinction:** FreezeWire is **not** CEL (**Collateral Eligibility Ledger**). CEL freezes an *instrument* (e.g. issuer `Paused`). FreezeWire freezes a *counterparty* after an Attestcoin-proven Circle USDC blacklist, while preserving essential non-extractive rights (repaying debt and withdrawing unencumbered collateral remain unlocked).
+> **Key Distinction:** FreezeWire is **not** CEL (**Collateral Eligibility Ledger**). CEL freezes an *instrument* (e.g. issuer `Paused`). FreezeWire freezes a *counterparty* after an Attestcoin-proven Circle USDC blacklist, while preserving essential non-extractive rights (repaying debt and withdrawing unencumbered collateral remain unlocked). Same as refusing an API or admin key: the chain only moves after `0x0FD2` + consumer checks.
 
 ---
 
@@ -93,6 +93,17 @@ This makes the operator a **single point of failure**:
 
 ### The FreezeWire Solution
 FreezeWire eliminates oracle privilege entirely. There is **no `setStatus` function** anywhere in the protocol. The off-chain worker is strictly an untrusted transport and gas relayer. Anyone can submit a proof, but Creditcoin smart contracts will only alter an address's eligibility if the mathematical proof passes validation against Creditcoin's native precompile `0x0FD2`.
+
+### Differentiation (one glance)
+
+| Approach | Object / signal | Who decides Restricted? |
+|:---|:---|:---|
+| **Admin setter** | Whatever the key says | Privileged `setRestricted` |
+| **API / indexer** | Off-chain list or webhook | Backend narrative |
+| **CEL** | *Instrument* (e.g. issuer `Paused`) | Attestcoin proof → asset eligibility |
+| **FreezeWire** | *Counterparty* (Circle USDC `Blacklisted`) | Attestcoin proof → address eligibility |
+
+Same Attestcoin spine as CEL-class apps; different gate. Worker/UI only discover/relay — no `setStatus`. Full field notes: [`docs/COMPETITIVE_POSITIONING.md`](./docs/COMPETITIVE_POSITIONING.md).
 
 ---
 
@@ -342,7 +353,7 @@ freeze-wire/
 │   │   ├── MockUSD.sol            # Demo ERC-20 collateral/liquidity asset
 │   │   ├── interfaces/            # Minimal clean interfaces
 │   │   └── libraries/             # EvmV1Decoder, TxIndex, EventSelectors
-│   ├── test/                      # 10 test suites (93 passed unit & fuzz tests)
+│   ├── test/                      # 10 test suites (95 passed unit & fuzz tests; 1 skipped)
 │   │   ├── AdversarialReceipts.t.sol
 │   │   ├── SecurityBoundaries.t.sol
 │   │   ├── EligibilityLedger.t.sol
@@ -355,7 +366,7 @@ freeze-wire/
 │   │   ├── attestcoin/            # Proof Builder HTTP client & index recovery
 │   │   ├── relay/                 # CC3 broadcast helper & calldata preparation
 │   │   └── discover/              # Ethereum event poller & scanner
-│   └── test/                      # 33 automated backend tests
+│   └── test/                      # 45 automated backend tests
 │
 ├── frontend/                      # Interactive React 19 + Three.js demo application
 │   ├── src/
@@ -406,7 +417,7 @@ forge build
 forge test
 ```
 
-> **Result:** `93 passed, 0 failed, 1 skipped (94 total tests)`. (The single skip is the optional live test requiring a live Attestcoin API connection).
+> **Result:** `95 passed, 0 failed, 1 skipped (96 total tests)`. (The single skip is the optional live test requiring a live Attestcoin API connection).
 
 ### 2. Backend Worker Verification
 Run the backend test suite and start the local proof relay server:
@@ -414,7 +425,7 @@ Run the backend test suite and start the local proof relay server:
 ```bash
 cd backend
 npm ci
-npm test       # Runs 38 unit & integration tests
+npm test       # Runs 45 unit & integration tests
 npm run build
 npm start      # Starts HTTP server at http://127.0.0.1:8000
 ```
@@ -477,7 +488,7 @@ Public addresses and txs below are verified against committed public evidence `d
 |:---|:---|:---:|
 | **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **Verified** (95 passed, 1 skipped) |
 | **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` Merkle path recovery | **Verified** |
-| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (38 passed) |
+| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (45 passed) |
 | **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js | **Built** |
 | **CC3 Testnet Deployment** | Live addresses + `submitProof` evidence above | **Live on chain 102031** |
 | **CC3 Mainnet Deployment** | Production mainnet | *Out of scope for this demo* |

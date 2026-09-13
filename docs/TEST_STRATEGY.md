@@ -85,7 +85,7 @@ Live e2e after deploy: DEMO script.
 
 ## Manual demo tests
 
-Checklist in `DEMO_SPECIFICATION.md`. Pass/fail against DEMO-001–006.
+Checklist in [`DEMO_RUNBOOK.md`](./DEMO_RUNBOOK.md). Pass/fail against DEMO-001–006. Talk script: [`DEMO_SPECIFICATION.md`](./DEMO_SPECIFICATION.md).
 
 ## Mapping summary
 

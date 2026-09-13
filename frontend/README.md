@@ -9,21 +9,24 @@ cp .env.example .env   # optional overrides
 npm ci
 npm run dev            # http://localhost:5173
 npm run build
+npm test               # honesty / SM Vitests
 ```
 
 Requires the Phase 4 worker at `VITE_API_BASE_URL` (default `http://127.0.0.1:8000`) for prove / relay / status / demo evidence.
 
-## Demo path (~150s)
+## Demo path (two-account — see operator runbook)
+
+Live account **B** (`0xe05F…`) is already **RESTRICTED** from a prior permissionless `submitProof`. Do **not** narrate a live ELIGIBLE→RESTRICTED flip on that address.
 
 1. Confirm worker health in the header.
-2. **LOAD DEMO EVIDENCE** — real Ethereum Blacklisted tx from `GET /v1/evidence/demo`.
-3. Status reads `GET /v1/status/{account}` (ELIGIBLE until proven on-chain).
-4. **FETCH PROOF** — `GET /v1/prove/{txHash}` (does not mutate eligibility).
-5. **SUBMIT TO CREDITCOIN** — `POST /v1/relay`. If relay is disabled, calldata dialog for a client wallet.
-6. Status becomes **RESTRICTED** when the ledger reflects the proof.
-7. Credit access matrix: DRAW / PROTECTED TRANSFER / ESCROW LOCK / RELEASE blocked; REPAY / WITHDRAW UNUSED available. Prefer live `Restricted` revert when `VITE_CREDIT_LINE_ADDRESS` is set.
+2. **TRACE EVENT** — real Ethereum Blacklisted tx for **B** from `GET /v1/evidence/demo`.
+3. Status may already read **RESTRICTED** from the ledger (prior commit). Say so; open Blockscout `0x07e3…`.
+4. **FETCH PROOF BUNDLE** — `GET /v1/prove/{txHash}` (does not mutate eligibility; UI says **PROOF BUNDLE READY**, not verified).
+5. **COMMIT TO CREDITCOIN** — `POST /v1/relay` optional. Replay may no-op; if relay is disabled, calldata dialog for a client wallet (**NOT BROADCAST** until receipt).
+6. Show consequence as **B**: DRAW blocked; REPAY / WITHDRAW UNUSED available. Prefer live `Restricted()` when `VITE_CREDIT_LINE_ADDRESS` is set.
+7. **Account A** (`0x6b0745…`) for the “before” draw — use wallet/explorer, not LOAD DEMO (UI binds B).
 
-See `docs/DEMO_SPECIFICATION.md`.
+Operator checklist: [`docs/DEMO_RUNBOOK.md`](../docs/DEMO_RUNBOOK.md). Talk script: [`docs/DEMO_SPECIFICATION.md`](../docs/DEMO_SPECIFICATION.md).
 
 ## Structure
 

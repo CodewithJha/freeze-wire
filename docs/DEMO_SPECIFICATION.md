@@ -92,6 +92,8 @@ See `COMPETITIVE_POSITIONING.md` and `SECURITY_MODEL.md`.
 
 ## Props / prep
 
+Full operator checklist: [`DEMO_RUNBOOK.md`](./DEMO_RUNBOOK.md).
+
 - Two explorer tabs pre-opened (Etherscan demo tx + Blockscout `submitProof`)
 - Worker healthy (`/v1/health`)
 - Funded wallets for **A** (and **B** if showing live draw revert)

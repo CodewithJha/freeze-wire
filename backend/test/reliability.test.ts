@@ -5,7 +5,7 @@ import { pruneRateBuckets } from '../src/api/index.js';
 import { loadEnv, loadNetworks, resolveAppConfig, defaultNetworksPath } from '../src/config/index.js';
 import { discoverCandidates } from '../src/services/discover.js';
 import { ApiError, ApiErrorCode } from '../src/domain/errors.js';
-import type { EthRpcClient } from '../src/clients/cc3Rpc.js';
+import { createJsonRpcClient, type EthRpcClient } from '../src/clients/cc3Rpc.js';
 
 describe('bounded retries', () => {
   it('retries retriable failures then succeeds', async () => {
@@ -47,6 +47,25 @@ describe('bounded retries', () => {
     assert.equal(isRetriableHttpStatus(429), true);
     assert.equal(isRetriableHttpStatus(408), true);
     assert.equal(isRetriableHttpStatus(400), false);
+  });
+
+  it('JSON-RPC retries transport flaps like fetch failed', async () => {
+    let n = 0;
+    const { rpc } = createJsonRpcClient({
+      url: 'http://127.0.0.1:9',
+      timeoutMs: 50,
+      fetchImpl: async () => {
+        n += 1;
+        if (n < 3) throw new Error('fetch failed');
+        return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: '0x1' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      },
+    });
+    const result = await rpc('eth_chainId', []);
+    assert.equal(result, '0x1');
+    assert.equal(n, 3);
   });
 });
 

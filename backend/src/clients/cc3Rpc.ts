@@ -97,10 +97,7 @@ export function createJsonRpcClient(options: {
       return withBoundedRetries(() => rpcOnce(method, params), {
         maxRetries: 2,
         delayMs: 40,
-        isRetriable: (err) =>
-          err instanceof RpcTransportError &&
-          err.retriable &&
-          (err.message.startsWith('RPC HTTP') || err.message === 'RPC timeout' || /unavailable/i.test(err.message)),
+        isRetriable: (err) => err instanceof RpcTransportError && err.retriable,
       });
     },
   };
