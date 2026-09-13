@@ -84,8 +84,9 @@ export function ProofMoment({
             </h2>
           </div>
           <p className="max-w-xs text-[0.9375rem] leading-relaxed text-fw-mist">
-            Fetch proof only claims success when the worker returns a proof bundle. Nothing here
-            is simulated — and a ready bundle is not yet a Creditcoin attestation.
+            Fetch proof only claims success when the worker returns an Attestcoin proof bundle
+            (Merkle + continuity for BlockProver <span className="fw-mono text-fw-paper">0x0FD2</span>
+            ). Nothing here is simulated — and a ready bundle is not yet a Creditcoin attestation.
           </p>
         </div>
 

@@ -149,12 +149,12 @@ export function DemoWorkspace() {
       proofReady: evidence.proofReady,
       calldataPrepared: Boolean(calldata) && !relayed,
       committed: relayed,
-      // Only after verify — ambient ledger RESTRICTED from TRACE alone must not skip the story.
+      // Step 04 done only after Creditcoin commit + chain status — not calldata alone.
       accessResolved:
         evidence.proofReady &&
         status !== 'UNKNOWN' &&
         statusSource === 'chain' &&
-        (relayed || Boolean(calldata)),
+        relayed,
     }),
     [evidence.txHash, evidence.proofReady, calldata, relayed, status, statusSource],
   );

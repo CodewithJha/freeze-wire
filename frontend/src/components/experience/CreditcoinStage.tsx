@@ -35,8 +35,9 @@ export function CreditcoinStage({
             boundary.
           </h2>
           <p className="mt-5 max-w-sm text-[0.9375rem] leading-relaxed text-fw-mist">
-            A ready proof bundle does not imply Creditcoin state. Until the ledger attests,
-            access remains unsettled.
+            A ready Attestcoin proof bundle does not imply Creditcoin state. Until{' '}
+            <span className="fw-mono text-fw-paper">0x0FD2</span> succeeds on-chain and the ledger
+            attests, access remains unsettled.
           </p>
         </div>
 

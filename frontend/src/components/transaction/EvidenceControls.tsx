@@ -57,7 +57,7 @@ export function EvidenceControls({
     },
     {
       n: '02',
-      label: 'Verify proof',
+      label: 'Fetch proof bundle',
       done: sequence.proofReady,
       active: sequence.evidenceLoaded && !sequence.proofReady,
     },
@@ -73,7 +73,7 @@ export function EvidenceControls({
       n: '04',
       label: 'Test access',
       done: sequence.accessResolved,
-      active: (sequence.committed || sequence.calldataPrepared) && !sequence.accessResolved,
+      active: sequence.committed && !sequence.accessResolved,
     },
   ];
 
@@ -131,7 +131,7 @@ export function EvidenceControls({
           {loadingDemo ? 'TRACING…' : 'TRACE EVENT'}
         </Button>
         <Button type="button" variant="secondary" onClick={onProve} disabled={!canProve || proving}>
-          {proving ? 'VERIFYING…' : 'VERIFY PROOF'}
+          {proving ? 'FETCHING…' : 'FETCH PROOF BUNDLE'}
         </Button>
         <Button type="button" onClick={onRelay} disabled={!canRelay || relaying}>
           {relaying ? 'COMMITTING…' : 'COMMIT TO CREDITCOIN'}
