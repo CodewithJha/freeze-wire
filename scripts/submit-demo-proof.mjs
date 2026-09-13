@@ -31,6 +31,7 @@ const demoAccount =
   (process.env.DEMO_RESTRICTED_ACCOUNT ?? '0xe05F529f5284D75624eBa386CB716928c3b54A2A').toLowerCase();
 const proofBuilderUrl =
   process.env.PROOF_BUILDER_URL ?? 'https://proof-gen-api.cc3-testnet.creditcoin.network';
+const attestcoinChainKey = Number(process.env.ATTESTCOIN_CHAIN_KEY ?? 3);
 const rpcUrl = process.env.CC3_RPC_URL ?? 'https://rpc.cc3-testnet.creditcoin.network';
 const chainId = Number(process.env.CC3_CHAIN_ID ?? 102031);
 
@@ -116,11 +117,13 @@ console.log('demoSourceTx', demoTx);
 console.log('ledger', ledger);
 console.log('submitter', account.address);
 
-const proveUrl = `${proofBuilderUrl.replace(/\/$/, '')}/api/v1/proof/tx/${demoTx}`;
+// Match backend Proof Builder client: GET /api/v1/proof-by-tx/{chainKey}/{txHash}
+const proveUrl = `${proofBuilderUrl.replace(/\/$/, '')}/api/v1/proof-by-tx/${attestcoinChainKey}/${demoTx}`;
 const headers = { Accept: 'application/json' };
 if (process.env.PROOF_BUILDER_API_KEY) {
   headers.Authorization = `Bearer ${process.env.PROOF_BUILDER_API_KEY}`;
 }
+console.log('proofByTx', proveUrl.replace(demoTx, `${demoTx.slice(0, 10)}…`));
 const proveRes = await fetch(proveUrl, { headers });
 if (!proveRes.ok) {
   console.error(`Proof Builder failed: HTTP ${proveRes.status}`);
@@ -132,6 +135,14 @@ if (!bundle.txBytes) {
   console.error('Proof Builder response missing txBytes');
   process.exit(1);
 }
+console.log(
+  'proof ok',
+  `chainKey=${bundle.chainKey}`,
+  `headerNumber=${bundle.headerNumber}`,
+  `txIndex=${bundle.txIndex}`,
+  `siblings=${bundle.merkleProof?.siblings?.length ?? 0}`,
+  `continuityRoots=${bundle.continuityProof?.roots?.length ?? 0}`,
+);
 
 const outDir = path.join(root, 'deployments');
 mkdirSync(outDir, { recursive: true });
