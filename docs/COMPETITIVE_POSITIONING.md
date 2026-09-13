@@ -2,16 +2,20 @@
 
 Sources: competitor READMEs fetched 2026-09-10 and prior-gate intel. **No superiority claims without evidence.** Completeness bar in this field is high (ChargeProof, CEL, Deadswitch, etc.).
 
+**Memorize:** *CEL freezes the instrument; FreezeWire freezes the counterparty — only after Attestcoin proves the Ethereum fact.*
+
 ---
 
 ## FreezeWire
 
-**What they do / What we do:** Inherit Circle USDC **address-level** `Blacklisted`/`UnBlacklisted` into CTC **credit and escrow** via Attestcoin, with consumer checks and never-trap-exits.
+**What we do:** Inherit Circle USDC **address-level** `Blacklisted`/`UnBlacklisted` into CTC **credit and escrow** via Attestcoin, with consumer checks and never-trap-exits.
 
 **Key difference vs field:** Object is the **counterparty**, not collateral instrument, not reputation score, not EV session, not vault withdrawal.
 
+**Live (CC3 testnet demo):** Deployed contracts + permissionless `submitProof` → `RESTRICTED` + draw revert evidenced (see README / `DEPLOYMENT_PLAN.md`). Still a testnet demo — do not claim production completeness over S-tier peers.
+
 **Potential judge objection:** “Isn’t this CEL with a different event?”  
-**Our answer:** CEL’s object is the *instrument* (`Paused`). Ours is the *address* Circle flagged. Same Attestcoin spine, different economic gate: the dollar can still exist; **new credit to that address** cannot. We say this even if CEL is stronger on tests/deploy — we do not claim more completeness than they have shown.
+**Our answer:** CEL freezes the *instrument* (e.g. issuer `Paused`). We freeze the *counterparty* Circle flagged — after Attestcoin proves the fact. Same Attestcoin spine, different economic gate: the dollar can still exist; **new credit to that address** cannot. We do **not** claim more tests, polish, or packaging than CEL has shown.
 
 ---
 
@@ -24,7 +28,7 @@ Sources: competitor READMEs fetched 2026-09-10 and prior-gate intel. **No superi
 **Key difference:** Primary key = address vs asset. Event family = Circle blacklist vs pause.
 
 **Judge objection:** “CEL already shipped this pattern; you are late and thinner.”  
-**Answer:** Acknowledge CEL as S-tier and **honestly reuse the pattern** (consumer checks, no owner-write, never-gate-exits). Differentiation is the **object** (counterparty compliance). If we cannot show a live Restricted event, CEL wins completeness — that is a delivery risk, not a slogan.
+**Answer:** Acknowledge CEL as S-tier and **honestly reuse the pattern** (consumer checks, no owner-write, never-gate-exits). Differentiation is the **object** (counterparty compliance) plus a live Restricted consequence on a Circle blacklist. Do not claim we are “better than CEL” overall.
 
 ---
 

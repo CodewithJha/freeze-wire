@@ -1,37 +1,58 @@
 # Deployment plan
 
-**Do not deploy in Gate 5A.** This is the runbook for Phase 8.
+Phase 8 runbook + **live CC3 testnet** public facts. Do not commit secrets, `.env`, or deployment JSON that embeds private keys.
 
 ---
 
 ## Live CC3 Testnet Deployment
 
-**Status (honest):** Live broadcast requires a funded `DEPLOYER_PRIVATE_KEY` with tCTC on chain id **102031**. Until that key is set, contracts are **not** claimed deployed on Creditcoin.
+**Status:** Deployed and evidenced on Creditcoin CC3 Testnet (**chainId `102031`**). Public addresses and txs below match local registries `deployments/cc3-testnet.json` and `deployments/demo-evidence-public.json` (typically gitignored; public fields only reproduced here).
 
-### Runbook
-
-1. `./scripts/smoke-cc3.sh` — confirms `eth_chainId == 102031`, probes `0x0FD2` via `calculateTxIndex` (precompile has empty `eth_getCode`), Proof Builder health.
-2. Fund deployer via Creditcoin testnet faucet; set `DEPLOYER_PRIVATE_KEY` in `.env` (never commit).
-3. `./scripts/deploy-cc3-testnet.sh` — deploys MockUSD → BlacklistVerifier → EligibilityLedger → GatedCreditLine; writes gitignored `deployments/cc3-testnet.json`.
-4. `node scripts/sync-deployment-env.mjs` — copies public addresses into `.env` / `frontend/.env.local`.
-5. `node scripts/submit-demo-proof.mjs` — Proof Builder for demo tx `0xc9edfdbb…` then permissionless `submitProof`; expects `statusOf(0xe05F…) == RESTRICTED`.
-6. Fund MockUSD / deposit; protected `draw` must revert `Restricted`; repay / withdraw unused remain available.
-
-### Verified public artifacts
-
-Fill only after a successful live run (no secrets):
+### Registry (public)
 
 | Field | Value |
 |---|---|
-| chainId | 102031 |
-| demo source tx | `0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787` |
-| MockUSD | _(pending deploy)_ |
-| BlacklistVerifier | _(pending deploy)_ |
-| EligibilityLedger | _(pending deploy)_ |
-| GatedCreditLine | _(pending deploy)_ |
-| submitProof tx | _(pending)_ |
+| network | `cc3-testnet` |
+| chainId | `102031` |
+| deployBlock | `5479278` |
+| attestcoinChainKey | `3` (Ethereum mainnet on CC3 testnet) |
+| proofMinHeight / proofMaxHeight | `0` / `0` (unbounded — demo default; disclose) |
+| ltvBps | `5000` |
+| sourceUsdc (immutable emitter) | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
+| blockProver | `0x0000000000000000000000000000000000000FD2` |
+| MockUSD | `0x6943EB32EAb562791f095E91ee288627ADDdC5B3` |
+| BlacklistVerifier | `0x6bf238291Bb8262918A1989831856DC6BC47D869` |
+| EligibilityLedger | `0xde64d5037cA820D4aDFa703C4FaF5451be840C9d` |
+| GatedCreditLine | `0xB04fFca20e0a992474E6AD501A061973dC9Ed340` |
 
-Canonical USDC emitter remains immutable Circle USDC `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`. Attestcoin native verifier `0x0FD2`, chainKey **3**.
+### Demo / evidence (public)
+
+| Field | Value |
+|---|---|
+| demo source tx (ETH) | `0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787` |
+| demo account (RESTRICTED) | `0xe05F529f5284D75624eBa386CB716928c3b54A2A` |
+| eligible actor | `0x6b07454d70896cad371982A57037933e24F4cD52` |
+| prove meta | height `25705174`, txIndex `18`, siblings `9`, continuity roots `27` |
+| submitProof tx | `0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45` |
+| submitProofStatus | `success` |
+| statusOf(demo) | `RESTRICTED` |
+| draw as restricted | reverted |
+
+**Disclosures:** Testnet demo only. MockUSD is test collateral on CC3; Circle USDC is the Ethereum source fact. No production-security claims. Featured demo account may already be RESTRICTED — use two-account demo script (`DEMO_SPECIFICATION.md`).
+
+Explorers: https://creditcoin-testnet.blockscout.com · RPC: https://rpc.cc3-testnet.creditcoin.network
+
+---
+
+## Re-deploy / smoke runbook (if redeploying)
+
+1. `./scripts/smoke-cc3.sh` — `eth_chainId == 102031`, probe `0x0FD2`, Proof Builder health.
+2. Fund deployer via faucet; set `DEPLOYER_PRIVATE_KEY` in `.env` (**never commit**).
+3. `./scripts/deploy-cc3-testnet.sh` — MockUSD → BlacklistVerifier → EligibilityLedger → GatedCreditLine → gitignored `deployments/cc3-testnet.json`.
+4. `node scripts/sync-deployment-env.mjs` — public addresses into local env files.
+5. `node scripts/submit-demo-proof.mjs` — prove demo tx then permissionless `submitProof`; expect `statusOf(0xe05F…) == RESTRICTED`.
+6. Fund MockUSD / deposit; protected `draw` must revert; repay / unused withdraw remain available.
+7. Publish **public** addresses/hashes in README; keep keys and private JSON out of git.
 
 ---
 
@@ -60,27 +81,25 @@ WSS: `wss://rpc.cc3-testnet.creditcoin.network`
 | Key | Role |
 |---|---|
 | `DEPLOYER_PRIVATE_KEY` | Broadcast create txs; fund with tCTC |
-| `RELAY_PRIVATE_KEY` | Optional gas for `submitProof` |
-| Demo user | Deposit/draw/repay (can be deployer) |
+| `RELAY_PRIVATE_KEY` | Optional gas for `submitProof` (empty → wallet path) |
+| Demo users | Eligible actor for deposit/draw; restricted account for consequence |
 
 Faucet: Creditcoin Discord `#token-faucet` `/faucet address:<EVM>` ([docs](https://docs.creditcoin.org/wallets/using-testnet-faucet.md)).
 
-**BLOCKER:** without a funded deployer, Phase 8 cannot complete.
-
-Use `--legacy` if CC3 rejects EIP-1559 (prior run noted this; **re-verify** with a dry `forge script`).
+Use `--legacy` if CC3 rejects EIP-1559 (re-verify with a dry `forge script`).
 
 ---
 
 ## Deployment order
 
 1. `MockUSD`
-2. `BlacklistVerifier` (precompile `0x0FD2`, chainKey 3, **immutable** emitter USDC from config, window from config)
+2. `BlacklistVerifier` (precompile `0x0FD2`, chainKey 3, **immutable** emitter USDC, window from config)
 3. `EligibilityLedger` (verifier address)
 4. `GatedCreditLine` (ledger, MockUSD, ltvBps)
-5. Mint demo MockUSD to operator/borrower
+5. Mint demo MockUSD to operator / eligible actor
 6. Verify config via `eth_call` (expectedChainKey, emitter)
 7. `submitProof` for demo tx (or wallet)
-8. Record addresses in a **gitignored** `deployment.local.json`; publish addresses in README only after they exist on-chain
+8. Record addresses in **gitignored** local JSON; publish public addresses in README only
 
 Dependencies: ledger needs verifier; credit line needs ledger + token. No circular deploys.
 
@@ -97,9 +116,10 @@ Never commit filled `.env`.
 ## Verification
 
 - Blockscout contract pages (bytecode)
-- `statusOf(demoAccount)` before/after proof
+- `statusOf(demoAccount)` after proof == `RESTRICTED`
 - `Restricted` log on ledger
-- Optional: `verifyAndEmit` tx on Blockscout
+- Optional: `verifyAndEmit` / `submitProof` tx on Blockscout
+- Draw revert + repay success on gated line
 
 ---
 
@@ -117,13 +137,12 @@ A wrong `expectedEmitter` cannot be patched in place (immutable). Redeploy with 
 1. eth_chainId == 102031
 2. 0x0FD2 responds to calculateTxIndex (eth_getCode is empty for precompiles)
 3. Proof Builder /api/v1/health
-4. forge script --broadcast (or documented failure)
-5. statusOf(0xe05F…) after proof == RESTRICTED
-6. draw reverts; repay succeeds
+4. statusOf(0xe05F…) == RESTRICTED (post-proof)
+5. draw reverts; repay succeeds
 ```
 
 ---
 
 ## Post-deploy
 
-Update DEMO spec with live tx hashes. Update ASSUMPTIONS if Proof Builder health is degraded (`cc3_rpc_connected: false` was previously observed while proofs still served from cache — **UNVERIFIED now**; re-check).
+Keep `DEMO_SPECIFICATION.md` and README aligned with live hashes. Re-check Proof Builder health if discovery degrades. CC3 mainnet remains out of scope for this demo.

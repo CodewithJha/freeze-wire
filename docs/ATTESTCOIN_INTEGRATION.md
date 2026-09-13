@@ -2,6 +2,8 @@
 
 Attestcoin is **load-bearing**. Eligibility cannot move without a proof that BlockProver accepts. This page freezes the integration against official docs fetched **2026-09-10**. See `RESEARCH_BASELINE.md` for provenance.
 
+**Submission one-pager:** [`ATTESTCOIN_INTEGRATION_SUMMARY.md`](./ATTESTCOIN_INTEGRATION_SUMMARY.md) (14 points + removal test + live evidence).
+
 ---
 
 ## 1. Source chain

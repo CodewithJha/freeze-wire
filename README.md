@@ -68,7 +68,7 @@ A 5-stage verification spine in smart contracts validates receipt status, enforc
 └──────────────────────────────┘    └────────────────────────┘    └─────────────────────────────┘
 ```
 
-> **Key Distinction:** FreezeWire is **not** CEL (Cross-Chain Execution Layer). CEL pauses an entire *instrument* or contract. FreezeWire gates a specific *counterparty* while preserving essential non-extractive rights (repaying debt and withdrawing unencumbered collateral remain fully unlocked).
+> **Key Distinction:** FreezeWire is **not** CEL (**Collateral Eligibility Ledger**). CEL freezes an *instrument* (e.g. issuer `Paused`). FreezeWire freezes a *counterparty* after an Attestcoin-proven Circle USDC blacklist, while preserving essential non-extractive rights (repaying debt and withdrawing unencumbered collateral remain unlocked).
 
 ---
 
@@ -300,26 +300,30 @@ A complete end-to-end judge demonstration executing the 5-stage verification seq
 - **Targeted Account:** `0xe05F529f5284D75624eBa386CB716928c3b54A2A`
 - **Method Called:** `blacklist(address)` → Emitted `Blacklisted(0xe05F...4A2A)`
 
-### The 5-Step Demo Sequence
+### Two-Account Demo Reality
+
+The featured Circle-blacklisted account (`0xe05F…`) is **already `RESTRICTED`** on the live ledger after a prior permissionless `submitProof`. Do **not** claim a live ELIGIBLE→RESTRICTED transition on that address during presentation.
+
+| Role | Address | What you show |
+|:---|:---|:---|
+| **A — Eligible actor** | `0x6b07454d70896cad371982A57037933e24F4cD52` | Deposit / draw / repay / withdraw succeed (default ELIGIBLE ≠ proven clean) |
+| **B — Restricted counterparty** | `0xe05F529f5284D75624eBa386CB716928c3b54A2A` | Explorer + draw revert / repay still allowed |
 
 ```text
-[Step 1: Baseline]       Borrower 0xe05F...4A2A queries ELIGIBLE. Deposits collateral & draws MockUSD.
+[Step 1: Baseline]       Eligible actor 0x6b0745… deposits & draws MockUSD (succeeds).
                                │
-[Step 2: Source Inspect] Verify the real blacklist transaction on Etherscan (Circle USDC, Status 1).
+[Step 2: Source Inspect] Etherscan: real USDC blacklist tx targeting 0xe05F….
                                │
-[Step 3: Fetch Proof]    Worker queries Attestcoin Proof Builder API -> Merkle + Continuity bundle.
+[Step 3: Fetch Proof]    Worker / UI fetches Attestcoin Merkle + Continuity bundle.
                                │
-[Step 4: Verify & Relay] Broadcast submitProof() on CC3 -> 0x0FD2 succeeds -> Ledger logs Restricted.
+[Step 4: Verify & Relay] Prior or live submitProof on CC3 → ledger Restricted for 0xe05F….
                                │
-[Step 5: Gated Credit]   Borrower attempts another draw -> REVERT BorrowerRestricted.
-                         Borrower calls repayCreditLine() -> SUCCESS (exit rights preserved).
+[Step 5: Gated Credit]   As 0xe05F…: draw reverts BorrowerRestricted; repay / unused withdraw OK.
 ```
 
-1. **Baseline State:** Before evidence is submitted to the ledger, the account queries as `ELIGIBLE` by default. The borrower deposits collateral into `GatedCreditLine` and successfully draws credit.
-2. **Inspect Real L1 Event:** The judge views the real transaction on Etherscan, observing Circle's official multisig calling `blacklist` and emitting event log topic `0xffa0cd89...`.
-3. **Generate Cryptographic Proof:** The operator clicks **"Fetch Proof"** in the FreezeWire UI or queries the worker at `GET /v1/prove/{txHash}`. Attestcoin returns the Merkle inclusion and continuity proofs.
-4. **On-Chain Verification:** The proof is broadcast via `submitProof(...)`. Creditcoin's precompile `0x0FD2` confirms cryptographic validity, `BlacklistVerifier` checks consumer invariants, and `EligibilityLedger` sets `statusOf[0xe05F...] = RESTRICTED`.
-5. **Financial Gating Enforced:** The restricted borrower attempts to execute `drawCreditLine()`. The transaction instantly reverts with custom error `BorrowerRestricted(0xe05F...)`. The borrower then calls `repayCreditLine()` and `withdrawUnusedCollateral()`, which execute successfully.
+**Closer:** *The backend never told Creditcoin the address was blacklisted. The Attestcoin proof did.*
+
+Full timing script: [`docs/DEMO_SPECIFICATION.md`](docs/DEMO_SPECIFICATION.md).
 
 ---
 
@@ -436,14 +440,44 @@ npm run build
 <a id="roadmap--deployment-status"></a>
 ## 🗺️ Roadmap & Deployment Status
 
+### Live Creditcoin CC3 Testnet (demo deploy)
+
+Public addresses and txs below are verified against local registries `deployments/cc3-testnet.json` and `deployments/demo-evidence-public.json` (public fields only; live JSON is typically gitignored).
+
+| Field | Value |
+|:---|:---|
+| **Network** | Creditcoin CC3 Testnet |
+| **chainId** | `102031` |
+| **Attestcoin chainKey** (Ethereum mainnet) | `3` |
+| **Deploy block** | `5479278` |
+| **Proof window** | `minHeight=0`, `maxHeight=0` (unbounded — demo default; disclose, not production hardening) |
+| **BlockProver** | `0x0000000000000000000000000000000000000FD2` |
+| **Circle USDC (source fact, Ethereum)** | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
+| **MockUSD** (test collateral / liquidity on CC3 — **not** Circle USDC) | `0x6943EB32EAb562791f095E91ee288627ADDdC5B3` |
+| **BlacklistVerifier** | `0x6bf238291Bb8262918A1989831856DC6BC47D869` |
+| **EligibilityLedger** | `0xde64d5037cA820D4aDFa703C4FaF5451be840C9d` |
+| **GatedCreditLine** | `0xB04fFca20e0a992474E6AD501A061973dC9Ed340` |
+| **Demo ETH source tx** | [`0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787`](https://etherscan.io/tx/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787) |
+| **Restricted demo account** | `0xe05F529f5284D75624eBa386CB716928c3b54A2A` |
+| **Eligible demo actor** | `0x6b07454d70896cad371982A57037933e24F4cD52` |
+| **submitProof tx** | [`0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45`](https://creditcoin-testnet.blockscout.com/tx/0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45) |
+| **statusOf(restricted)** | `RESTRICTED` (evidence artifact) |
+
+**Disclosures (honesty):**
+
+- This is a **CC3 testnet demo** deployment — **no production-security or mainnet credit-bureau claims**.
+- **MockUSD** is demo ERC-20 collateral/liquidity on CC3. Circle USDC on Ethereum is the **source compliance fact** only; FreezeWire does not claim Circle reserves or issued USDC on Creditcoin.
+- Proof height window is **`(0, 0)` = unbounded** in this deploy; fine for the pinned demo tx, not a production freshness policy.
+- Featured blacklist account may already be `RESTRICTED` from a prior permissionless submit — use the **two-account** demo script.
+
 | Subsystem | Scope / Capability | Current Status |
 |:---|:---|:---:|
-| **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **100% Verified** (93/93 tests passing) |
-| **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` bitwise Merkle path recovery | **100% Verified** |
-| **Backend Proof Client** | Attestcoin Proof Builder integration & OpenAPI client | **100% Verified** (31/31 tests passing) |
-| **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js 3D visualization | **100% Built & Verified** |
-| **CC3 Testnet Deployment** | Script `DeployCC3Testnet.s.sol` + network configuration | **Script Ready** (Broadcast awaiting funded deployer key) |
-| **CC3 Mainnet Deployment** | Production mainnet deployment with multi-asset gates | *Post-demo target* |
+| **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **Verified** (93 passed, 1 skipped) |
+| **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` Merkle path recovery | **Verified** |
+| **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (31 passed) |
+| **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js | **Built** |
+| **CC3 Testnet Deployment** | Live addresses + `submitProof` evidence above | **Live on chain 102031** |
+| **CC3 Mainnet Deployment** | Production mainnet | *Out of scope for this demo* |
 
 ---
 
