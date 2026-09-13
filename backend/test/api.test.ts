@@ -559,3 +559,63 @@ describe('hex + ABI integrity', () => {
     assert.ok(data.includes(n.encodedTransaction.slice(2)));
   });
 });
+
+describe('body size + gas margin + txIndex mismatch', () => {
+  it('POST /v1/relay rejects oversized bodies with 413', async () => {
+    const config = baseConfig({ relayPrivateKey: undefined });
+    const fetchImpl: typeof fetch = async () => new Response(JSON.stringify(sample), { status: 200 });
+    await withServer(config, fetchImpl, async (base) => {
+      const huge = 'x'.repeat(1_048_577);
+      const relay = await fetch(`${base}/v1/relay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': String(huge.length + 2) },
+        body: `"${huge}"`,
+      });
+      assert.equal(relay.status, 413);
+      const body = (await relay.json()) as { code: string; message: string };
+      assert.equal(body.code, ApiErrorCode.INVALID_REQUEST);
+      assert.match(body.message, /too large/i);
+    });
+  });
+
+  it('GET /v1/discover rejects range above MAX_DISCOVER_BLOCK_RANGE', async () => {
+    const config = baseConfig();
+    const fetchImpl: typeof fetch = async () => new Response('{}', { status: 200 });
+    await withServer(config, fetchImpl, async (base) => {
+      const res = await fetch(`${base}/v1/discover?fromBlock=1&toBlock=20000`);
+      assert.equal(res.status, 400);
+      const body = (await res.json()) as { code: string; message: string };
+      assert.equal(body.code, ApiErrorCode.INVALID_REQUEST);
+      assert.match(body.message, /block range exceeds max/i);
+    });
+  });
+
+  it('applyGasMargin stays in bigint and rounds up', async () => {
+    const { applyGasMargin } = await import('../src/services/relay.js');
+    assert.equal(applyGasMargin(1000n, 1.2), 1200n);
+    assert.equal(applyGasMargin(10n, 1.2), 12n);
+    const big = 10n ** 18n;
+    const margined = applyGasMargin(big, 1.2);
+    assert.equal(typeof margined, 'bigint');
+    assert.equal(margined, (big * 1200n) / 1000n);
+  });
+
+  it('proveByTx rejects recovered vs reported txIndex mismatch', async () => {
+    const config = baseConfig();
+    const mismatched = {
+      ...sample,
+      txIndex: 99,
+      // siblings still encode 18
+    };
+    const client = createProofBuilderClient({
+      baseUrl: 'https://example.invalid',
+      fetchImpl: async () => new Response(JSON.stringify(mismatched), { status: 200 }),
+    });
+    await assert.rejects(() => proveByTx(client, config, DEMO_TX), (err: unknown) => {
+      assert.ok(err instanceof ApiError);
+      assert.equal(err.code, ApiErrorCode.INVALID_REQUEST);
+      assert.match(err.message, /txIndex mismatch/i);
+      return true;
+    });
+  });
+});

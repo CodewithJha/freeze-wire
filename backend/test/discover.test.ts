@@ -72,4 +72,35 @@ describe('T-API-DISC discover', () => {
       return true;
     });
   });
+
+  it('rejects oversized discover block range', async () => {
+    const networks = loadNetworks(defaultNetworksPath());
+    const env = loadEnv({
+      environ: {
+        FW_ENV: 'cc3-testnet',
+        PROOF_BUILDER_URL: 'https://proof-gen-api.cc3-testnet.creditcoin.network',
+        CC3_RPC_URL: 'https://rpc.cc3-testnet.creditcoin.network',
+        ETH_RPC_URL: 'https://ethereum.publicnode.com',
+      },
+    });
+    const config = resolveAppConfig(env, networks);
+    const eth: EthRpcClient = {
+      async getLogs() {
+        assert.fail('getLogs must not run for oversized range');
+        return [];
+      },
+      async getTransactionReceipt() {
+        return null;
+      },
+    };
+    await assert.rejects(
+      () => discoverCandidates({ eth, config, fromBlock: 1, toBlock: 20_000, maxBlockRange: 10_000 }),
+      (err: unknown) => {
+        assert.ok(err instanceof ApiError);
+        assert.equal(err.code, ApiErrorCode.INVALID_REQUEST);
+        assert.match(err.message, /block range exceeds max/i);
+        return true;
+      },
+    );
+  });
 });

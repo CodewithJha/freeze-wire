@@ -10,6 +10,11 @@ import { discoverCandidates } from '../services/discover.js';
 import { proveByTx, relaySubmitProof, type RelayRequestBody } from '../services/relay.js';
 import { checkHealth, evidenceDemo, readStatus } from '../services/status.js';
 
+/** Max JSON body for POST /v1/relay (proof bundles + margin). */
+export const MAX_JSON_BODY_BYTES = 1_048_576;
+/** Max eth_getLogs span for discover (provider-friendly). */
+export const MAX_DISCOVER_BLOCK_RANGE = 10_000;
+
 export type WorkerDeps = {
   config: AppConfig;
   log: Logger;
@@ -29,10 +34,23 @@ function isLocalhost(req: IncomingMessage): boolean {
   return ip === '127.0.0.1' || ip === '::1' || ip === ':ffff:127.0.0.1' || ip === 'localhost';
 }
 
-async function readJson(req: IncomingMessage): Promise<unknown> {
+async function readJson(req: IncomingMessage, maxBytes = MAX_JSON_BODY_BYTES): Promise<unknown> {
+  const declared = req.headers['content-length'];
+  if (declared) {
+    const n = Number.parseInt(declared, 10);
+    if (Number.isFinite(n) && n > maxBytes) {
+      throw new ApiError(ApiErrorCode.INVALID_REQUEST, 'Request body too large', 413);
+    }
+  }
   const chunks: Buffer[] = [];
+  let total = 0;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    total += buf.length;
+    if (total > maxBytes) {
+      throw new ApiError(ApiErrorCode.INVALID_REQUEST, 'Request body too large', 413);
+    }
+    chunks.push(buf);
   }
   if (chunks.length === 0) return {};
   const text = Buffer.concat(chunks).toString('utf8');
@@ -191,12 +209,28 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
         const fromBlock = url.searchParams.get('fromBlock');
         const toBlock = url.searchParams.get('toBlock');
         const address = url.searchParams.get('address') ?? undefined;
+        const fromParsed = fromBlock ? Number.parseInt(fromBlock, 10) : undefined;
+        const toParsed = toBlock ? Number.parseInt(toBlock, 10) : undefined;
+        if (
+          fromParsed !== undefined &&
+          toParsed !== undefined &&
+          Number.isFinite(fromParsed) &&
+          Number.isFinite(toParsed) &&
+          toParsed - fromParsed > MAX_DISCOVER_BLOCK_RANGE
+        ) {
+          throw new ApiError(
+            ApiErrorCode.INVALID_REQUEST,
+            `Discover block range exceeds max ${MAX_DISCOVER_BLOCK_RANGE}`,
+            400,
+          );
+        }
         const body = await discoverCandidates({
           eth,
           config,
-          fromBlock: fromBlock ? Number.parseInt(fromBlock, 10) : undefined,
-          toBlock: toBlock ? Number.parseInt(toBlock, 10) : undefined,
+          fromBlock: fromParsed,
+          toBlock: toParsed,
           address,
+          maxBlockRange: MAX_DISCOVER_BLOCK_RANGE,
         });
         sendJson(res, 200, body, requestId);
         return;

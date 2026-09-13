@@ -5,6 +5,7 @@ export {
   buildSubmitProofCalldata,
   encodeSubmitProof,
   normalizeProofFields,
+  applyGasMargin,
   type ProveApiResponse,
   type RelayRequestBody,
   type RelaySuccess,

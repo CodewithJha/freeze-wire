@@ -112,6 +112,16 @@ export function encodeSubmitProof(args: ReturnType<typeof normalizeProofFields>)
   });
 }
 
+/** Apply gas multiplier without coercing gas through Number (precision-safe). */
+export function applyGasMargin(gas: bigint, multiplier: number): bigint {
+  if (!Number.isFinite(multiplier) || multiplier < 1) {
+    return gas;
+  }
+  const scale = 1000n;
+  const factor = BigInt(Math.round(multiplier * 1000));
+  return (gas * factor + scale - 1n) / scale;
+}
+
 export async function proveByTx(
   client: ProofBuilderClient,
   config: AppConfig,
@@ -128,7 +138,20 @@ export async function proveByTx(
   }
 
   try {
-    const { bundle } = await fetchProofByTx(client, config.attestcoinChainKey, txHash, log);
+    const { bundle, recoveredTxIndex, reportedTxIndex } = await fetchProofByTx(
+      client,
+      config.attestcoinChainKey,
+      txHash,
+      log,
+    );
+    if (recoveredTxIndex !== reportedTxIndex) {
+      throw new ApiError(
+        ApiErrorCode.INVALID_REQUEST,
+        `txIndex mismatch: recovered ${recoveredTxIndex} != reported ${reportedTxIndex}`,
+        400,
+        false,
+      );
+    }
     if (bundle.chainKey !== config.attestcoinChainKey) {
       throw new ApiError(
         ApiErrorCode.WRONG_CHAIN,
@@ -140,7 +163,7 @@ export async function proveByTx(
     const normalized = normalizeProofFields({
       chainKey: bundle.chainKey,
       headerNumber: bundle.headerNumber,
-      txIndex: bundle.txIndex,
+      txIndex: Number(recoveredTxIndex),
       txBytes: bundle.txBytes!,
       merkleProof: bundle.merkleProof,
       continuityProof: bundle.continuityProof,
@@ -148,7 +171,7 @@ export async function proveByTx(
     return {
       chainKey: bundle.chainKey,
       headerNumber: bundle.headerNumber,
-      txIndex: bundle.txIndex,
+      txIndex: Number(recoveredTxIndex),
       txBytes: normalized.encodedTransaction,
       merkleProof: {
         root: normalized.merkleProof.root,
@@ -336,7 +359,7 @@ export async function relaySubmitProof(options: {
       true,
     );
   }
-  const gasWithMargin = BigInt(Math.ceil(Number(gas) * config.gasLimitMultiplier));
+  const gasWithMargin = applyGasMargin(gas, config.gasLimitMultiplier);
   const fees = await cc3.getFeeEstimate();
   const nonce = await cc3.getTransactionCount(account.address);
 

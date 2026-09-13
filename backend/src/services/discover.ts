@@ -65,10 +65,31 @@ export async function discoverCandidates(options: {
   fromBlock?: number;
   toBlock?: number;
   address?: string;
+  /** Max inclusive span when both from/to provided (default 10_000). */
+  maxBlockRange?: number;
 }): Promise<{ candidates: DiscoverCandidate[] }> {
   const { eth, config } = options;
   if (!eth) {
     throw new ApiError(ApiErrorCode.ETH_RPC_FAILED, 'ETH_RPC_URL not configured', 502, true);
+  }
+
+  const maxRange = options.maxBlockRange ?? 10_000;
+  if (
+    options.fromBlock !== undefined &&
+    options.toBlock !== undefined &&
+    Number.isFinite(options.fromBlock) &&
+    Number.isFinite(options.toBlock)
+  ) {
+    if (options.toBlock < options.fromBlock) {
+      throw new ApiError(ApiErrorCode.INVALID_REQUEST, 'toBlock must be >= fromBlock', 400);
+    }
+    if (options.toBlock - options.fromBlock > maxRange) {
+      throw new ApiError(
+        ApiErrorCode.INVALID_REQUEST,
+        `Discover block range exceeds max ${maxRange}`,
+        400,
+      );
+    }
   }
 
   const filterAddress = options.address ? assertAddress(options.address) : undefined;
