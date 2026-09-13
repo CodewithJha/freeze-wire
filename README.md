@@ -17,6 +17,19 @@ FreezeWire turns Circle USDC compliance events (`Blacklisted` / `UnBlacklisted`)
 
 ---
 
+## Demo video
+
+[~2 min] Circle USDC blacklist fact → Attestcoin proof → Creditcoin `RESTRICTED` enforcement (no oracle setter).
+
+[![FreezeWire demo — click to watch](docs/media/freeze-wire-demo-poster.jpg)](docs/media/freeze-wire-demo.mp4)
+
+**Watch:** [`docs/media/freeze-wire-demo.mp4`](docs/media/freeze-wire-demo.mp4) · [open raw on GitHub](https://github.com/CodewithJha/freeze-wire/raw/master/docs/media/freeze-wire-demo.mp4)
+
+<video src="docs/media/freeze-wire-demo.mp4" controls poster="docs/media/freeze-wire-demo-poster.jpg" width="720" title="FreezeWire demo">
+</video>
+
+---
+
 ## What is FreezeWire?
 
 Creditcoin contracts cannot read Ethereum logs natively. FreezeWire bridges **address-level** Circle USDC blacklist facts into CTC credit and escrow by verifying Attestcoin proofs on-chain, then gating a demo credit line:
