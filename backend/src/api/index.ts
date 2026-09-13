@@ -23,6 +23,8 @@ export type WorkerDeps = {
 
 type RateBucket = { count: number; resetAt: number };
 
+export type { RateBucket };
+
 function clientIp(req: IncomingMessage): string {
   const xf = req.headers['x-forwarded-for'];
   if (typeof xf === 'string' && xf.length > 0) return xf.split(',')[0]!.trim();
@@ -61,7 +63,13 @@ async function readJson(req: IncomingMessage, maxBytes = MAX_JSON_BODY_BYTES): P
   }
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown, requestId: string): void {
+function sendJson(
+  res: ServerResponse,
+  status: number,
+  body: unknown,
+  requestId: string,
+  extraHeaders?: Record<string, string>,
+): void {
   const enriched =
     body && typeof body === 'object' && !Array.isArray(body)
       ? { ...(body as Record<string, unknown>), requestId }
@@ -70,8 +78,38 @@ function sendJson(res: ServerResponse, status: number, body: unknown, requestId:
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'X-Request-Id': requestId,
+    ...extraHeaders,
   });
   res.end(payload);
+}
+
+/** Drop expired rate-limit buckets (exported for tests). */
+export function pruneRateBuckets(buckets: Map<string, RateBucket>, now = Date.now()): number {
+  let removed = 0;
+  for (const [key, bucket] of buckets) {
+    if (now >= bucket.resetAt) {
+      buckets.delete(key);
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
+/** Public path only — never log secrets, keys, or full proof payloads. */
+function sanitizeLogFields(fields: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fields)) {
+    if (/private|secret|mnemonic|authorization|api[_-]?key|relay|gate|password/i.test(k)) {
+      out[k] = '[redacted]';
+      continue;
+    }
+    if (typeof v === 'string' && (/0x[a-fA-F0-9]{64,}/.test(v) || v.length > 200)) {
+      out[k] = `[len=${v.length}]`;
+      continue;
+    }
+    out[k] = v;
+  }
+  return out;
 }
 
 /** Strip secrets / internal dumps from client-facing ApiError messages. */
@@ -136,19 +174,29 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
     : undefined;
 
   const buckets = new Map<string, RateBucket>();
+  let pruneCounter = 0;
 
-  function rateLimit(req: IncomingMessage, limit: number): void {
+  function rateLimit(req: IncomingMessage, limit: number): { retryAfterSec?: number } {
+    pruneCounter += 1;
+    if (pruneCounter % 32 === 0) {
+      pruneRateBuckets(buckets);
+    }
     const key = `${clientIp(req)}:${req.url?.split('?')[0] ?? ''}`;
     const now = Date.now();
     const bucket = buckets.get(key);
     if (!bucket || now >= bucket.resetAt) {
       buckets.set(key, { count: 1, resetAt: now + 60_000 });
-      return;
+      return {};
     }
     bucket.count += 1;
     if (bucket.count > limit) {
-      throw new ApiError(ApiErrorCode.RATE_LIMITED, 'Rate limit exceeded', 429, true);
+      const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+      throw Object.assign(
+        new ApiError(ApiErrorCode.RATE_LIMITED, 'Rate limit exceeded', 429, true),
+        { retryAfterSec },
+      );
     }
+    return {};
   }
 
   function assertRelayAuth(req: IncomingMessage): void {
@@ -184,6 +232,15 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
         throw new ApiError(ApiErrorCode.INVALID_REQUEST, 'Invalid path', 400);
       }
 
+      log.info(
+        'api.received',
+        sanitizeLogFields({
+          requestId,
+          method: req.method ?? 'GET',
+          path,
+        }),
+      );
+
       const healthLimit = 60;
       const defaultLimit = config.rateLimitPerMin;
       rateLimit(req, path === '/v1/health' || path === '/health' ? healthLimit : defaultLimit);
@@ -211,6 +268,16 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
         const address = url.searchParams.get('address') ?? undefined;
         const fromParsed = fromBlock ? Number.parseInt(fromBlock, 10) : undefined;
         const toParsed = toBlock ? Number.parseInt(toBlock, 10) : undefined;
+        if (
+          (fromParsed !== undefined && toParsed === undefined) ||
+          (fromParsed === undefined && toParsed !== undefined)
+        ) {
+          throw new ApiError(
+            ApiErrorCode.INVALID_REQUEST,
+            'Discover requires both fromBlock and toBlock, or neither (demo pin only)',
+            400,
+          );
+        }
         if (
           fromParsed !== undefined &&
           toParsed !== undefined &&
@@ -245,7 +312,18 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
 
       const proveMatch = /^\/v1\/prove\/(0x[0-9a-fA-F]{64})$/.exec(path);
       if (proveMatch && req.method === 'GET') {
+        log.info('api.prove', sanitizeLogFields({ requestId, phase: 'start', txHash: proveMatch[1]! }));
         const body = await proveByTx(proofClient, config, proveMatch[1]!, log);
+        log.info(
+          'api.prove',
+          sanitizeLogFields({
+            requestId,
+            phase: 'done',
+            headerNumber: body.headerNumber,
+            txIndex: body.txIndex,
+            chainKey: body.chainKey,
+          }),
+        );
         sendJson(res, 200, body, requestId);
         return;
       }
@@ -255,8 +333,25 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
 
       if (path === '/v1/relay' && req.method === 'POST') {
         assertRelayAuth(req);
+        log.info('api.relay', sanitizeLogFields({ requestId, phase: 'start' }));
         const body = (await readJson(req)) as RelayRequestBody;
         const result = await relaySubmitProof({ body, config, proofClient, cc3, log });
+        if ('ctcTx' in result) {
+          log.info(
+            'api.relay',
+            sanitizeLogFields({
+              requestId,
+              phase: 'done',
+              ctcTx: result.ctcTx,
+              restrictedCount: result.restricted.length,
+            }),
+          );
+        } else {
+          log.info(
+            'api.relay',
+            sanitizeLogFields({ requestId, phase: 'done', disabled: true }),
+          );
+        }
         sendJson(res, 200, result, requestId);
         return;
       }
@@ -276,10 +371,13 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
           requestId,
           code: err.code,
           httpStatus: err.httpStatus,
-          message: err.message,
+          message: sanitizeClientMessage(err.code, err.message),
         });
-        // Client body: stable code + safe message + extras. Keep raw detail in logs only.
         const clientMessage = sanitizeClientMessage(err.code, err.message);
+        const retryAfterSec =
+          typeof (err as ApiError & { retryAfterSec?: number }).retryAfterSec === 'number'
+            ? (err as ApiError & { retryAfterSec: number }).retryAfterSec
+            : undefined;
         sendJson(
           res,
           err.httpStatus,
@@ -288,6 +386,7 @@ export function createWorkerHandler(deps: WorkerDeps): (req: IncomingMessage, re
             message: clientMessage,
           },
           requestId,
+          retryAfterSec !== undefined ? { 'Retry-After': String(retryAfterSec) } : undefined,
         );
         return;
       }

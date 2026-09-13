@@ -1,4 +1,5 @@
 import { ApiError, ApiErrorCode } from '../domain/errors.js';
+import { isRetriableHttpStatus, withBoundedRetries } from './retry.js';
 
 export type JsonRpcId = number | string;
 
@@ -57,34 +58,50 @@ export function createJsonRpcClient(options: {
   const timeoutMs = options.timeoutMs ?? 30_000;
   const errorCode = options.errorCode ?? ApiErrorCode.CC3_RPC_FAILED;
 
+  async function rpcOnce(method: string, params: unknown[]): Promise<unknown> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetchImpl(options.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        throw new RpcTransportError(
+          `RPC HTTP ${res.status}`,
+          errorCode,
+          isRetriableHttpStatus(res.status),
+        );
+      }
+      const body = (await res.json()) as { result?: unknown; error?: { message?: string; code?: number } };
+      if (body.error) {
+        // Application-level JSON-RPC errors are not transport retries.
+        throw new RpcTransportError(body.error.message ?? 'RPC error', errorCode, false);
+      }
+      return body.result;
+    } catch (err) {
+      if (err instanceof RpcTransportError) throw err;
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new RpcTransportError('RPC timeout', errorCode, true);
+      }
+      throw new RpcTransportError(err instanceof Error ? err.message : 'RPC unavailable', errorCode, true);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   return {
     async rpc(method: string, params: unknown[]): Promise<unknown> {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetchImpl(options.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          throw new RpcTransportError(`RPC HTTP ${res.status}`, errorCode, true);
-        }
-        const body = (await res.json()) as { result?: unknown; error?: { message?: string; code?: number } };
-        if (body.error) {
-          throw new RpcTransportError(body.error.message ?? 'RPC error', errorCode, true);
-        }
-        return body.result;
-      } catch (err) {
-        if (err instanceof RpcTransportError) throw err;
-        if (err instanceof Error && err.name === 'AbortError') {
-          throw new RpcTransportError('RPC timeout', errorCode, true);
-        }
-        throw new RpcTransportError(err instanceof Error ? err.message : 'RPC unavailable', errorCode, true);
-      } finally {
-        clearTimeout(timer);
-      }
+      return withBoundedRetries(() => rpcOnce(method, params), {
+        maxRetries: 2,
+        delayMs: 40,
+        isRetriable: (err) =>
+          err instanceof RpcTransportError &&
+          err.retriable &&
+          (err.message.startsWith('RPC HTTP') || err.message === 'RPC timeout' || /unavailable/i.test(err.message)),
+      });
     },
   };
 }

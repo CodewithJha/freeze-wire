@@ -4,6 +4,7 @@ import type {
   HealthCheckResponse,
   SingleContinuityResponse,
 } from '../domain/proof.js';
+import { isRetriableHttpStatus, withBoundedRetries } from './retry.js';
 
 const hexString = z.string().regex(/^0x[0-9a-fA-F]*$/);
 const hex32 = z.string().regex(/^0x[0-9a-fA-F]{64}$/);
@@ -89,7 +90,7 @@ export function createProofBuilderClient(options: {
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? 30_000;
 
-  async function request(path: string): Promise<unknown> {
+  async function requestOnce(path: string): Promise<unknown> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (options.apiKey) {
       headers.Authorization = `Bearer ${options.apiKey}`;
@@ -129,9 +130,25 @@ export function createProofBuilderClient(options: {
           lastAttestedBlock: parsed.data.last_attested_block,
         });
       }
-      throw new ProofBuilderError(res.status, 'PROOF_BUILDER_FAILED', `Proof Builder HTTP ${res.status}`, res.status >= 500);
+      throw new ProofBuilderError(
+        res.status,
+        'PROOF_BUILDER_FAILED',
+        `Proof Builder HTTP ${res.status}`,
+        isRetriableHttpStatus(res.status),
+      );
     }
     return body;
+  }
+
+  async function request(path: string): Promise<unknown> {
+    return withBoundedRetries(() => requestOnce(path), {
+      maxRetries: 2,
+      delayMs: 40,
+      isRetriable: (err) =>
+        err instanceof ProofBuilderError &&
+        err.retriable &&
+        (err.httpStatus >= 500 || err.httpStatus === 504 || err.httpStatus === 408 || err.httpStatus === 429),
+    });
   }
 
   return {

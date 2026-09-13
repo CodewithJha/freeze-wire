@@ -74,16 +74,23 @@ export async function discoverCandidates(options: {
   }
 
   const maxRange = options.maxBlockRange ?? 10_000;
-  if (
-    options.fromBlock !== undefined &&
-    options.toBlock !== undefined &&
-    Number.isFinite(options.fromBlock) &&
-    Number.isFinite(options.toBlock)
-  ) {
-    if (options.toBlock < options.fromBlock) {
+  const hasFrom = options.fromBlock !== undefined && Number.isFinite(options.fromBlock);
+  const hasTo = options.toBlock !== undefined && Number.isFinite(options.toBlock);
+
+  // Reject one-sided ranges — from=0 or to=latest alone can become an unbounded eth_getLogs.
+  if (hasFrom !== hasTo) {
+    throw new ApiError(
+      ApiErrorCode.INVALID_REQUEST,
+      'Discover requires both fromBlock and toBlock, or neither (demo pin only)',
+      400,
+    );
+  }
+
+  if (hasFrom && hasTo) {
+    if (options.toBlock! < options.fromBlock!) {
       throw new ApiError(ApiErrorCode.INVALID_REQUEST, 'toBlock must be >= fromBlock', 400);
     }
-    if (options.toBlock - options.fromBlock > maxRange) {
+    if (options.toBlock! - options.fromBlock! > maxRange) {
       throw new ApiError(
         ApiErrorCode.INVALID_REQUEST,
         `Discover block range exceeds max ${maxRange}`,
@@ -97,16 +104,14 @@ export async function discoverCandidates(options: {
   const seen = new Set<string>();
 
   try {
-    const fromBlock =
-      options.fromBlock !== undefined ? `0x${options.fromBlock.toString(16)}` : 'latest';
-    const toBlock = options.toBlock !== undefined ? `0x${options.toBlock.toString(16)}` : 'latest';
-
-    // Narrow default: when no range given, do not scan entire chain — only pin demo.
-    if (options.fromBlock !== undefined || options.toBlock !== undefined) {
+    // Narrow default: when no range given, do not scan — only pin demo below.
+    if (hasFrom && hasTo) {
+      const fromBlock = `0x${options.fromBlock!.toString(16)}`;
+      const toBlock = `0x${options.toBlock!.toString(16)}`;
       const logs = await eth.getLogs({
         address: config.sourceUsdc,
         topics: [[TOPIC_BLACKLISTED, TOPIC_UNBLACKLISTED]],
-        fromBlock: options.fromBlock !== undefined ? fromBlock : '0x0',
+        fromBlock,
         toBlock,
       });
       for (const log of logs) {
@@ -119,8 +124,7 @@ export async function discoverCandidates(options: {
         candidates.push(parsed);
       }
     }
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
+  } catch (err) {    if (err instanceof ApiError) throw err;
     const message = err instanceof RpcTransportError || err instanceof Error ? err.message : 'ETH RPC failed';
     throw new ApiError(ApiErrorCode.ETH_RPC_FAILED, message, 502, true);
   }
