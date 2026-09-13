@@ -53,7 +53,9 @@ frontend/.qa-artifacts/
 # Editor / OS debris already covered above; keep broadcast secrets out of tree
 contracts/broadcast/**/run-latest.json
 
-# Live deployment registries (public addresses, still environment-specific)
+# Live deployment registries (may be environment-specific; keep private fields out of git)
 deployments/*.json
 !deployments/*.example.json
 !deployments/cc3-testnet.example.json
+# Public-only evidence (addresses + txs — no keys); safe to commit for reviewers
+!deployments/*-public.json

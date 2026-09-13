@@ -1,0 +1,38 @@
+{
+  "network": "cc3-testnet",
+  "chainId": 102031,
+  "demoSourceTx": "0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787",
+  "demoAccount": "0xe05F529f5284D75624eBa386CB716928c3b54A2A",
+  "addresses": {
+    "mockUsd": "0x6943EB32EAb562791f095E91ee288627ADDdC5B3",
+    "blacklistVerifier": "0x6bf238291Bb8262918A1989831856DC6BC47D869",
+    "eligibilityLedger": "0xde64d5037cA820D4aDFa703C4FaF5451be840C9d",
+    "gatedCreditLine": "0xB04fFca20e0a992474E6AD501A061973dC9Ed340"
+  },
+  "prove": {
+    "chainKey": 3,
+    "headerNumber": 25705174,
+    "txIndex": 18,
+    "siblingCount": 9,
+    "continuityRootCount": 27,
+    "attestedHeight": 25966660
+  },
+  "submitProofTx": "0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45",
+  "submitProofStatus": "success",
+  "statusOf": "RESTRICTED",
+  "drawAsRestricted": {
+    "reverted": true,
+    "message": "The contract function \"draw\" reverted with the following signature:\n0xccc08913",
+    "data": ""
+  },
+  "eligibleActor": "0x6b07454d70896cad371982A57037933e24F4cD52",
+  "creditLineTxs": {
+    "mintTx": "0x0d665418dcd0e968e3a92ae4c893aa8a5b57e0604ebaba43bdc1b0f92ca5bec3",
+    "approveTx": "0x86ba7621485cd4355e28da9afd41bcb495eb8663a7499052a8f05f3cdbccb6d3",
+    "depositTx": "0x4c5cd5d25d4ad05de9901375fe236a71f5e9e33ac944799e14b3368877fa64fe",
+    "drawOkTx": "0xf36521081f0f8b955e79ba2a2d4b6eb876aa19b75d501039bcc499ec15328dcd",
+    "approveRepayTx": "0x565b755358cdf1fd96c4850f1fc9a058df3ae88544cb278f5030e988495a4a45",
+    "repayTx": "0x75ee8274474ee5c9c23e88814c97289db7f106a49dca8ac08ae82991e4a20e2c",
+    "withdrawTx": "0x5cd5da52a9e56fad0491b6fa3793a884965c7c47e7b43c256aa192972c5232b7"
+  }
+}

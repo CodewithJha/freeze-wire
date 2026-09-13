@@ -1,0 +1,11 @@
+{
+  "demoSourceTx": "0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787",
+  "chainKey": 3,
+  "headerNumber": 25705174,
+  "txIndex": 18,
+  "merkleRoot": "0xe853d44c1ba206e0976985d9178f86428d4d180dce85c3300878ccd91bdff2c3",
+  "siblingCount": 9,
+  "continuityRootCount": 27,
+  "cached": true,
+  "generatedAt": "2026-09-13T06:32:49.547314355Z"
+}
