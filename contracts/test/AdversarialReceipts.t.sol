@@ -5,6 +5,7 @@ import {EventKinds} from "../src/libraries/EventKinds.sol";
 import {EventSelectors} from "../src/libraries/EventSelectors.sol";
 import {IEligibilityLedger} from "../src/interfaces/IEligibilityLedger.sol";
 import {IBlacklistVerifier} from "../src/interfaces/IBlacklistVerifier.sol";
+import {INativeQueryVerifier} from "../src/interfaces/INativeQueryVerifier.sol";
 import {BlacklistVerifier} from "../src/BlacklistVerifier.sol";
 import {EligibilityLedger} from "../src/EligibilityLedger.sol";
 import {FreezeWireTestBase} from "./FreezeWireTestBase.sol";
@@ -171,5 +172,41 @@ contract AdversarialReceiptsTest is FreezeWireTestBase {
         ledger.submitProof(CHAIN_KEY, 24, _encodeLogs(logs, 1), _merkle(16), emptyContinuity);
         assertEq(uint256(_status(alice)), uint256(IEligibilityLedger.Status.ELIGIBLE));
         assertTrue(ledger.processed(_replayKey(CHAIN_KEY, 24, 16)));
+    }
+
+    /// @notice Named Model-A case: invalid Merkle sibling path → precompile rejects → ProofRejected.
+    /// @dev Mock does not evaluate sibling hashes; `accepted=false` stands in for 0x0FD2 reject.
+    function test_invalidMerkleSibling_revertsProofRejected() public {
+        native.setAccepted(false);
+        bytes memory encoded = _encodeKind(alice, EventKinds.BLACKLISTED, emitter, 1);
+        INativeQueryVerifier.MerkleProof memory bad = _merkle(42);
+        // Corrupt sibling hash (would fail real Merkle; mock gates on accepted).
+        if (bad.siblings.length > 0) {
+            bad.siblings[0].hash = bytes32(uint256(0xdead));
+        }
+        vm.expectRevert(BlacklistVerifier.ProofRejected.selector);
+        verifier.verifyAndBind(CHAIN_KEY, 50, encoded, bad, emptyContinuity);
+        vm.expectRevert(BlacklistVerifier.ProofRejected.selector);
+        vm.prank(relayer);
+        ledger.submitProof(CHAIN_KEY, 50, encoded, bad, emptyContinuity);
+        assertFalse(ledger.processed(_replayKey(CHAIN_KEY, 50, 42)));
+        assertEq(uint256(_status(alice)), uint256(IEligibilityLedger.Status.ELIGIBLE));
+    }
+
+    /// @notice Named Model-A case: corrupted continuity roots → precompile rejects → ProofRejected.
+    function test_corruptedContinuity_revertsProofRejected() public {
+        native.setAccepted(false);
+        bytes memory encoded = _encodeKind(alice, EventKinds.BLACKLISTED, emitter, 1);
+        INativeQueryVerifier.ContinuityProof memory bad;
+        bad.lowerEndpointDigest = bytes32(uint256(0xbad));
+        bad.roots = new bytes32[](1);
+        bad.roots[0] = bytes32(uint256(0xcafe));
+        vm.expectRevert(BlacklistVerifier.ProofRejected.selector);
+        verifier.verifyAndBind(CHAIN_KEY, 51, encoded, _merkle(7), bad);
+        vm.expectRevert(BlacklistVerifier.ProofRejected.selector);
+        vm.prank(relayer);
+        ledger.submitProof(CHAIN_KEY, 51, encoded, _merkle(7), bad);
+        assertFalse(ledger.processed(_replayKey(CHAIN_KEY, 51, 7)));
+        assertEq(uint256(_status(alice)), uint256(IEligibilityLedger.Status.ELIGIBLE));
     }
 }
