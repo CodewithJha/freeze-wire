@@ -6,7 +6,7 @@ Phase 8 runbook + **live CC3 testnet** public facts. Do not commit secrets, `.en
 
 ## Live CC3 Testnet Deployment
 
-**Status:** Deployed and evidenced on Creditcoin CC3 Testnet (**chainId `102031`**). Public addresses and txs below match local registries `deployments/cc3-testnet.json` and `deployments/demo-evidence-public.json` (typically gitignored; public fields only reproduced here).
+**Status:** Deployed and evidenced on Creditcoin CC3 Testnet (**chainId `102031`**). Public addresses and txs below match committed `deployments/demo-evidence-public.json` (and local `deployments/cc3-testnet.json` when present; non-`*-public.json` registries remain gitignored).
 
 ### Registry (public)
 
@@ -17,6 +17,8 @@ Phase 8 runbook + **live CC3 testnet** public facts. Do not commit secrets, `.en
 | deployBlock | `5479278` |
 | attestcoinChainKey | `3` (Ethereum mainnet on CC3 testnet) |
 | proofMinHeight / proofMaxHeight | `0` / `0` (unbounded — demo default; disclose) |
+
+**Window ops note (DOCUMENT ONLY):** Live deploy keeps `(0,0)` so demo header `25705174` stays admissible. Production should call owner `setWindow(min,max)` after measuring Attestcoin lag — **not executed in this push** (requires deployer key; avoid printing secrets). See `docs/SECURITY_EVIDENCE.md` and `docs/IMPROVEMENT_PLAN.md`.
 | ltvBps | `5000` |
 | sourceUsdc (immutable emitter) | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
 | blockProver | `0x0000000000000000000000000000000000000FD2` |
@@ -99,7 +101,7 @@ Use `--legacy` if CC3 rejects EIP-1559 (re-verify with a dry `forge script`).
 5. Mint demo MockUSD to operator / eligible actor
 6. Verify config via `eth_call` (expectedChainKey, emitter)
 7. `submitProof` for demo tx (or wallet)
-8. Record addresses in **gitignored** local JSON; publish public addresses in README only
+8. Record addresses in **gitignored** local `cc3-testnet.json`; commit scrubbed `*-public.json` public evidence; publish public addresses in README
 
 Dependencies: ledger needs verifier; credit line needs ledger + token. No circular deploys.
 

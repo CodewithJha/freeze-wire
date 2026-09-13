@@ -10,8 +10,9 @@
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.23%2B-363636.svg?style=flat-square&logo=solidity)](foundry.toml)
 [![Creditcoin CC3](https://img.shields.io/badge/Creditcoin%20CC3-Testnet%20102031-10B981.svg?style=flat-square)](https://creditcoin.network)
 [![Attestcoin](https://img.shields.io/badge/Attestcoin-0x0FD2%20Precompile-6366F1.svg?style=flat-square)](https://docs.attestcoin.org)
-[![Foundry Tests](https://img.shields.io/badge/Foundry-93%20Passed%20%7C%201%20Skipped-success.svg?style=flat-square)](contracts/test)
-[![Backend Tests](https://img.shields.io/badge/Worker-33%20Passed-success.svg?style=flat-square)](backend/test)
+[![Foundry Tests](https://img.shields.io/badge/Foundry-95%20Passed%20%7C%201%20Skipped-success.svg?style=flat-square)](contracts/test)
+[![Backend Tests](https://img.shields.io/badge/Worker-44%20Passed-success.svg?style=flat-square)](backend/test)
+[![Frontend Tests](https://img.shields.io/badge/Frontend-5%20Vitest-success.svg?style=flat-square)](frontend/src)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind%204-61DAFB.svg?style=flat-square&logo=react)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Typecheck-3178C6.svg?style=flat-square&logo=typescript)](backend/)
 
@@ -444,7 +445,7 @@ npm run build
 
 ### Live Creditcoin CC3 Testnet (demo deploy)
 
-Public addresses and txs below are verified against local registries `deployments/cc3-testnet.json` and `deployments/demo-evidence-public.json` (public fields only; live JSON is typically gitignored).
+Public addresses and txs below are verified against committed public evidence `deployments/demo-evidence-public.json` (and local `deployments/cc3-testnet.json` when present; non-public registries remain gitignored).
 
 | Field | Value |
 |:---|:---|
@@ -474,7 +475,7 @@ Public addresses and txs below are verified against local registries `deployment
 
 | Subsystem | Scope / Capability | Current Status |
 |:---|:---|:---:|
-| **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **Verified** (93 passed, 1 skipped) |
+| **Foundry Smart Contracts** | `BlacklistVerifier`, `EligibilityLedger`, `GatedCreditLine`, `MockUSD` | **Verified** (95 passed, 1 skipped) |
 | **Receipt Decoder Library** | `EvmV1Decoder` & `TxIndex` Merkle path recovery | **Verified** |
 | **Backend Proof Client** | Attestcoin Proof Builder integration | **Verified** (38 passed) |
 | **Interactive Demo Workspace** | React 19, Tailwind CSS 4, Three.js | **Built** |

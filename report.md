@@ -1,13 +1,48 @@
-# FREEZEWIRE — TECHNICAL AUDIT (post 90+ push)
+# FREEZEWIRE — TECHNICAL AUDIT
 
-**Generated:** 2026-09-13 (IST evening, post-implementation)  
-**Workspace:** `/Users/priyanshujha/Projects/freeze-wire`  
-**Basis:** Live deploy artifacts + Foundry/backend/frontend verification after docs accuracy, evidence docs, backend harden, frontend honesty fixes.  
-**Do not copy prior audit scores** — this file recomputes from FINAL state.
+**Generated:** 2026-09-13 (IST evening, stage-2 push)
+**Workspace:** `/Users/priyanshujha/Projects/freeze-wire`
+**Basis:** FINAL repo state after packaging evidence, backend reliability, Foundry named cases, FE Vitest, docs.
+**Do not copy prior audit scores** — recomputed below. Labels: VERIFIED / ESTIMATE / INFERENCE / UNKNOWN.
 
-**Hard rules (unchanged):** no invented protocol facts; no secrets; no `setStatus` / eligibility DB / rotatable emitter; Attestcoin load-bearing; label VERIFIED / ESTIMATE / INFERENCE / UNKNOWN.
+**Hard rules (unchanged):** no invented protocol facts; no secrets; no `setStatus` / eligibility DB / rotatable emitter; Attestcoin load-bearing; live CC3 deploy preserved (no redeploy).
 
-**Verdict (OPINION + ESTIMATE):** **SHIP WITH KNOWN RISKS.** Tech ~**84/100**. packaging submit / video / deck remain the human P0. Protocol path is live and evidenced.
+---
+
+## Executive Verdict
+
+| Field | Value | Label |
+|---|---|---|
+| Ship decision | **SHIP WITH KNOWN RISKS** | OPINION |
+| Technical score | **~87/100** | ESTIMATE |
+| Overall (if packaging incomplete) | **~74/100** | ESTIMATE |
+| Confidence | Medium-high on tech; packaging-gated on overall | ESTIMATE |
+| Previous tech (stage-1) | ~84/100 | HISTORICAL |
+| Delta | **+3** tech (packaging + FE tests + worker reliability + named adversarial cases) | ESTIMATE |
+
+**Further polish:** Not forced. Tech can defend mid-to-high 80s. Further polish still blocked primarily by **human packaging submit + deck PDF + demo video**, plus residual owner/window/CEI disclosures.
+
+### Strongest 5
+1. Attestcoin load-bearing / removal test
+2. Live CC3 Restricted + draw revert evidence (committed public JSON)
+3. Consumer-check security matrix + Foundry T-SEC-*
+4. Docs honesty (ABI, topics, PROOF BUNDLE READY)
+5. Worker fail-closed boundaries (no setter; body/range/txIndex)
+
+### Weakest 5
+1. packaging submit / video / deck UNKNOWN
+2. Submission packaging completeness
+3. Owner-tunable chainKey/window (documented residual)
+4. Unbounded proof window (disclosed)
+5. Demo already-RESTRICTED choreography friction
+
+### Remaining P0
+- Human: confirm packaging platform **Submit** with Integration Summary + GH + deck + video before deadline
+
+### Remaining P1
+- Owner/window residuals (DOCUMENT ONLY — no redeploy)
+- Empty RELAY → wallet path on stage
+- CEI polish deferred
 
 ---
 
@@ -17,7 +52,7 @@ FreezeWire inherits **Circle USDC address blacklists from Ethereum** into Credit
 
 ---
 
-## 2. Repo, GitHub, branch, author rules
+## 2. Repo, GitHub, branch, author
 
 | Item | Value | Label |
 |------|--------|--------|
@@ -26,9 +61,8 @@ FreezeWire inherits **Circle USDC address blacklists from Ethereum** into Credit
 | Branch | `master` → `origin/master` | VERIFIED |
 | Author | CodewithJha `<155089480+CodewithJha@users.noreply.github.com>` | VERIFIED |
 | License | MIT | VERIFIED |
-| Standalone | Yes (ADR-0001) | VERIFIED |
 
-Layout: `contracts/` · `backend/` · `frontend/` · `docs/` · `config/` · `scripts/` · `deployments/` (live JSON often gitignored; public evidence committed).
+Layout: `contracts/` · `backend/` · `frontend/` · `docs/` · `config/` · `scripts/` · `deployments/` (`*-public.json` **committed**; other live registries gitignored).
 
 ---
 
@@ -53,11 +87,11 @@ Layout: `contracts/` · `backend/` · `frontend/` · `docs/` · `config/` · `sc
 | statusOf(demo) | `RESTRICTED` |
 | `Restricted()` | `0xccc08913` |
 
-**Label:** VERIFIED against `deployments/demo-evidence-public.json` + README.
+**Label:** VERIFIED against committed `deployments/demo-evidence-public.json` + README. **Redeploy:** not performed this stage.
 
 ---
 
-## 4. Architecture pipeline
+## 4. Current architecture
 
 ```text
 Ethereum USDC Blacklisted / UnBlacklisted
@@ -69,17 +103,35 @@ Ethereum USDC Blacklisted / UnBlacklisted
   → GatedCreditLine.statusOf → Restricted() on extractive ops
 ```
 
-Worker: discover / prove / optional relay. Frontend: presentation + wallet path. **No setter.**
+Boundaries: PB/worker ≠ authority · 0x0FD2 ≠ receipt/emitter/topic/account · ledger ≠ credit math · UI ≠ eligibility oracle.
 
 ---
 
-## 5. Security invariants (do not break)
+## 5. Attestcoin load-bearing analysis
+
+| Question | Answer | Label |
+|---|---|---|
+| What Attestcoin / 0x0FD2 proves | Inclusion + continuity of encoded tx vs attested headers | VERIFIED (docs + design) |
+| What FreezeWire verifies independently | Receipt status, emitter, topic allowlist, account from topic[1], chainKey, window, replay, ordering | VERIFIED (Foundry) |
+| Why backend cannot forge Restricted | No setter API; on-chain path required | VERIFIED |
+| Why frontend cannot forge | Status from chain; accessResolved requires `relayed` | VERIFIED (code + Vitest) |
+| Removal test | Without 0x0FD2 success → no RESTRICTED write | VERIFIED (design + `ProofRejected` tests) |
+
+---
+
+## 6. Creditcoin integration analysis
+
+External Circle fact → Attestcoin proof → **Creditcoin-local** eligibility + gated credit primitive. Value is counterparty enforcement on CC3 credit ops, not “we called an API.” CEL freezes instruments; FreezeWire freezes counterparties after proven Blacklisted.
+
+---
+
+## 7. Security invariants
 
 | ID | Invariant | Status |
 |----|-----------|--------|
-| INV-1 | Backend never authorizes Restricted | VERIFIED (no setter API) |
-| INV-2 | Writes require `0x0FD2` success | VERIFIED (design + live submit) |
-| INV-3 | Immutable emitter + Blacklisted/UnBlacklisted only | VERIFIED (Foundry) |
+| INV-1 | Backend never authorizes Restricted | VERIFIED |
+| INV-2 | Writes require `0x0FD2` success | VERIFIED |
+| INV-3 | Immutable emitter + Blacklisted/UnBlacklisted only | VERIFIED |
 | INV-4 | Account from topic[1] | VERIFIED |
 | INV-5 | Failed receipts never write | VERIFIED |
 | INV-6 | Replay keys unique | VERIFIED |
@@ -87,271 +139,107 @@ Worker: discover / prove / optional relay. Frontend: presentation + wallet path.
 | INV-9 | No owner `setStatus` | VERIFIED |
 | INV-10 | UI/RPC/PB not oracles | VERIFIED (design) |
 
-Evidence matrix: `docs/SECURITY_EVIDENCE.md`.
+Evidence: `docs/SECURITY_EVIDENCE.md` (attack input / expected / actual / tests).
 
-**Security score (ESTIMATE):** **86/100** (residuals: owner chainKey/window, CEI polish, unbounded window).
-
----
-
-## 6. Current scores & competitive position
-
-### Dimension scores (/100) — ESTIMATE after this push
-
-| Dimension | Score | Notes |
-|-----------|------:|-------|
-| Attestcoin depth / removal test | 90 | Load-bearing; evidence docs judge-visible |
-| Live deploy + consequence | 88 | submitProof + RESTRICTED + draw revert |
-| Security / consumer checks | 86 | Foundry T-SEC-* green; residuals documented |
-| Docs honesty / consistency | 88 | Topic hashes, ABI names, Restricted(), Phase 8 superseded |
-| Backend reliability | 84 | Body/range/gas/txIndex harden + tests |
-| Frontend demo honesty | 82 | FETCH PROOF BUNDLE; accessResolved needs commit |
-| Competitive differentiation | 78 | Circle counterparty gate vs credit-score clones |
-| Submission packaging | 55 | packaging submit / video / deck UNKNOWN human |
-
-### **OVERALL: ~84/100** (tech product) · **~72/100** if packaging incomplete
-
-Competitive tier (ESTIMATE): **Top ~20–30%** among ~24 listed if submitted with video+deck; **0%** if not submitted.
+**Security score (ESTIMATE):** **87/100** (residuals: owner chainKey/window, CEI, unbounded window — DOCUMENT ONLY).
 
 ---
 
-## 7. Official demo rules summary (open-source Creditcoin project)
+## 8. Threat matrix (summary)
 
-Deadline **13 Sep 2026 23:59 ET**. Required: meta · Attestcoin Integration Summary · GitHub · deck/whitepaper PDF · demo video · team · working testnet deploy · packaging platform **Submit**. Open source expected. AI agents encouraged (AMA). Track: DeFi / Creditcoin Attestcoin readability.
-
-Sources: Creditcoin / Attestcoin public docs.
+≥20 threats covered in `SECURITY_EVIDENCE.md` including impostor emitter, wrong topic, failed receipt, wrong chainKey, window, forged txIndex, invalid Merkle sibling, corrupted continuity, replay, ordering, no setter, Restricted draw, PB lie, oversized POST, one-sided discover, rate-limit prune, PB/RPC retries.
 
 ---
 
-## 8. CRITICAL — packaging submit risk
+## 9. Testing (this pass — VERIFIED)
 
-**UNKNOWN / HUMAN:** Whether FreezeWire is fully **Submitted** with video + deck + Integration Summary on the packaging form. Prior scrape risk remains until a human confirms the public listing.
-
-**If missing before 23:59 ET:** eligibility fails regardless of tech score.
-
----
-
-## 9. Competitor landscape
-
-Dangerous peers: **Tab** (package), **Edgier** (mainnet exploit theater), credit-thesis entries, **AIR** (freeze narrative). FreezeWire differentiator: **Circle address Blacklisted → counterparty gate with repay preserved**, Attestcoin-required, live RESTRICTED evidence — not another credit score.
+| Suite | Result |
+|---|---|
+| Foundry | **95 passed**, 0 failed, **1 skipped** |
+| Backend | **44 passed**, 0 failed |
+| Frontend Vitest | **5 passed**, 0 failed |
+| Frontend build | **ok** |
+| `git diff --check` | clean (after whitespace fixes) |
 
 ---
 
-## 10. Strengths / weaknesses / priorities / DO NOT BUILD
-
-### Strengths
-- Attestcoin load-bearing + removal test documented
-- Immutable emitter; Merkle txIndex; replay; ordering
-- Live CC3 Restricted + draw revert
-- Docs accuracy + evidence one-pagers
-- Worker harden (body size, discover range, bigint gas, txIndex mismatch)
-- FE honesty: FETCH PROOF BUNDLE; step 04 requires commit
-
-### Weaknesses
-- packaging human packaging unknown
-- Demo account already RESTRICTED (two-account script mandatory)
-- Owner-tunable chainKey/window residual
-- Empty RELAY → wallet friction on stage
-- No full FE test suite
-
-### DO NOT BUILD
-- Multi-chain, indexer, AI, second fact type, eligibility DB, writability, `setStatus`, redeploy for immutable chainKey, major UI redesign
-
----
-
-## 11. What changed in this 90+ push
+## 10. What changed in stage-2 (vs ~84)
 
 | Area | Change |
 |------|--------|
-| Docs accuracy | README topic0 + real ABI (`draw`/`repay`/`deposit`/`withdraw`) + `Restricted()`; DEMO/SUMMARY; Phase 8 supersede in ASSUMPTIONS/CONSISTENCY/DEVELOPMENT_PLAN |
-| Evidence | `SECURITY_EVIDENCE.md`, `ATTESTCOIN_EVIDENCE.md`; short proof-chain in ATTESTCOIN_INTEGRATION |
-| Backend | POST body cap 1 MiB; discover max range 10k; `applyGasMargin` bigint; prove rejects txIndex mismatch; eth health 5s timeout; tests |
-| Frontend | `accessResolved` requires `relayed`; FETCH PROOF BUNDLE; Attestcoin/`0x0FD2` text in ProofMoment + CreditcoinStage |
+| Packaging | `.gitignore` allows `*-public.json`; commit demo evidence/proof public files |
+| Docs | Badge 93→95 / Worker 33→44; Integration Summary/DEPLOYMENT_PLAN gitignore language; `IMPROVEMENT_PLAN.md`; SECURITY_EVIDENCE upgrade; window ops note |
+| Backend | Bounded PB/RPC retries; rate-limit prune + Retry-After; discover both-or-neither; lifecycle logs; reliability tests |
+| Foundry | `test_invalidMerkleSibling_revertsProofRejected`, `test_corruptedContinuity_revertsProofRejected` |
+| Frontend | Vitest+RTL honesty tests; `computeEvidenceSequence`; CI `npm test` |
+
+**Skipped (by design):** redeploy, CEI rewrite, immutable chainKey, full indexer, Playwright e2e, fake ELIGIBLE→RESTRICTED, live `setWindow` call.
 
 ---
 
-## 12. Test baselines (this pass)
+## 11. Dimension scorecard (/100) — ESTIMATE
 
-| Suite | Result | Label |
-|-------|--------|--------|
-| `forge test` | **93 passed, 0 failed, 1 skipped** | VERIFIED |
-| `backend npm test` | **38 passed, 0 failed** | VERIFIED |
-| `frontend npm run build` | **ok** | VERIFIED |
-| `git diff --check` | **clean** | VERIFIED |
+| Dimension | Score | Evidence | Deduction |
+|---|---:|---|---|
+| Idea | 88 | Counterparty gate from Circle fact | Narrow product surface |
+| Technical Depth | 86 | Full proof→ledger→gate path | Window/owner residuals |
+| Attestcoin | 91 | Load-bearing + evidence docs | — |
+| Creditcoin | 86 | Live CC3 enforcement | Testnet-only |
+| Smart Contracts | 87 | +2 named ProofRejected cases | CEI residual |
+| Security | 87 | Expanded matrix | Owner/window |
+| Backend | 86 | Retries/prune/discover/logs | Not full indexer |
+| Frontend | 84 | Vitest honesty P0 | Thin coverage |
+| UX | 82 | Honest PROOF BUNDLE READY | Wallet friction |
+| Innovation | 80 | Attestcoin-required gate | Not novel DeFi market |
+| Differentiation | 80 | vs CEL / score clones | Messaging still needed live |
+| Real Functionality | 88 | Live Restricted + draw revert | Demo already restricted |
+| Live Deployment | 90 | Preserved; public JSON committed | Window 0/0 |
+| Reliability | 84 | Retries + caps | Discovery residual |
+| Scalability | 72 | Architecture clear | No indexer |
+| Testing | 86 | 95/44/5 | No Playwright |
+| Documentation | 90 | Evidence + change plan | — |
+| Demo | 78 | Two-account script | Human rehearsal |
+| Product | 76 | Clear ICP | Demo scope |
 
----
-
-## 13. Exact 1h / 3h / 6h plans (remaining human)
-
-| Window | Focus |
-|--------|--------|
-| **1h** | Confirm packaging submit fields; paste Integration Summary; open explorers |
-| **3h** | Record/upload demo video; deck PDF; rehearse two-account 150s |
-| **6h** | Backup recording; Q&A flashcards; fund wallet dry-run SIGN & BROADCAST |
-
-No further protocol code required for ship.
-
----
-
-## 14. Final 3-minute demo script
-
-| Time | Action |
-|------|--------|
-| 0:00–0:20 | Problem: Circle flag on ETH ≠ CTC credit without oracle |
-| 0:20–0:45 | Eligible actor `0x6b0745…` deposit/draw — **default ELIGIBLE ≠ clean** |
-| 0:45–1:10 | Etherscan demo Blacklisted for `0xe05F…` |
-| 1:10–1:35 | FETCH PROOF BUNDLE — speak spine; bundle ≠ ledger |
-| 1:35–2:05 | Blockscout `submitProof` `0x07e3…` / Restricted |
-| 2:05–2:35 | As B: `draw` → `Restricted()`; repay OK |
-| 2:35–3:00 | Closer: backend never told CTC — Attestcoin proof did |
-
-Full: `docs/DEMO_SPECIFICATION.md`.
+**Weighted tech overall: ~87.** Overall release score still packaging-gated.
 
 ---
 
-## 15. Judge objections + answers
+## 12. Exact 90+ gap (top 5)
 
-| Objection | Answer |
-|-----------|--------|
-| Backend is the oracle | No setter; only `submitProof` + `0x0FD2` + checks write |
-| Why not CEL? | CEL-style instrument pause vs address-level Circle inherit; repay still works |
-| Already Restricted? | Two-account demo; prior permissionless submit is a feature |
-| What does 0x0FD2 prove? | Inclusion+continuity only; ASC checks status/emitter/event/account |
-| Production ready? | Demo/testnet only; window unbounded disclosed |
-
----
-
-## 16. TOP 5 ACTIONS (remaining)
-
-1. **Human: packaging submit** before 23:59 ET (+ video + deck + Integration Summary).  
-2. Rehearse two-account demo with explorers pre-open.  
-3. Fund CC3 wallet; dry-run SIGN & BROADCAST (or COPY CALLDATA).  
-4. Speak DEMO-005 closer verbatim.  
-5. Do not redeploy; do not invent features.
+| # | Current | Why judges care | Fix | Effort | Risk | Gain |
+|---|---|---|---|---|---|---|
+| 1 | packaging submit unknown | Eligibility | Human Submit + video + deck | Human | Low | +8–15 overall |
+| 2 | Owner chainKey/window | Governance residual | Document (done) or redeploy immutable | L | High if redeploy | +1–2 tech |
+| 3 | Unbounded window | Freshness | Ops `setWindow` later | M | Demo break | +0.5–1 |
+| 4 | Thin FE e2e | Demo confidence | Optional Playwright | L | Time | +1 |
+| 5 | CEI polish | Auditor optics | Redeploy rewrite | L | High | +0.5–1 |
 
 ---
 
-## 17. FINAL RECOMMENDATION: SHIP WITH KNOWN RISKS
+## 13. Bugs / residuals
 
-```text
-CURRENT STATE: Live CC3 + submitProof/RESTRICTED evidenced; forge 93 / backend 38 /
-               frontend build green; docs honesty + evidence pages landed;
-               worker harden + FE accessResolved/FETCH PROOF BUNDLE done;
-               packaging submit / video / deck = HUMAN P0 residual.
-
-COMPETITIVE TIER: Top ~20–30% IF submitted with video+deck; 0% if not.
-BIGGEST STRENGTH: Load-bearing Attestcoin + live RESTRICTED consequence + honest docs.
-BIGGEST WEAKNESS: Platform packaging (Submit/video/deck) still human-owned.
-WINNING OPPORTUNITY: 90s Etherscan → Blockscout → Restricted() + DEMO-005.
-WINNING RISK: Not submitted / mid-demo wallet failure / claim live transition on 0xe05F….
-
-→ FINAL RECOMMENDATION: SHIP WITH KNOWN RISKS
-  (FIX THEN SHIP only for packaging human fields — not more protocol code)
-```
+| Sev | Item | Status |
+|---|---|---|
+| P0 | packaging submit not verified by agent | OPEN (human) |
+| P1 | Owner setExpectedChainKey/setWindow | RESIDUAL documented |
+| P1 | Window 0/0 | RESIDUAL documented |
+| P2 | GatedCreditLine CEI | DEFERRED |
+| P2 | Discovery may miss events | RESIDUAL mitigated (no one-sided scans) |
+| P3 | Vitest motion `initial` DOM warning | Cosmetic |
 
 ---
 
-## 18. Scorecard (detail)
+## 14. Final ship decision
 
-| Pillar | /100 | Evidence |
-|--------|-----:|----------|
-| Product clarity | 85 | README + demo spec aligned to real ABI/errors |
-| Attestcoin use | 90 | `ATTESTCOIN_EVIDENCE.md` + removal test |
-| Security rigor | 86 | `SECURITY_EVIDENCE.md` + Foundry |
-| Live proof | 88 | Public txs/addresses |
-| Engineering quality | 84 | Tests green; backend caps |
-| Demo UX honesty | 82 | Bundle ≠ verify; commit required for step 04 |
-| Judge packaging | 55 | UNKNOWN Submit completeness |
-| **Weighted overall** | **~84** | Tech-weighted; packaging separate |
+**SHIP WITH KNOWN RISKS.**
+
+Tech is stronger than stage-1 (~84→~87) without touching live Attestcoin→Creditcoin evidence. Do **not** claim a polished overall score until optional packaging is confirmed by a human.
 
 ---
 
-## 19. 90+ gap
+## Related
 
-To reach **90+ overall**, need roughly:
-
-1. **Confirmed packaging submit** with Integration Summary + video + deck (largest gap).  
-2. Smooth staged wallet commit (or polished recorded Restricted video).  
-3. Optional: immutable `expectedChainKey` (requires **redeploy** — skipped; residual only).  
-4. Optional: CEI rewrite on GatedCreditLine (skipped residual).
-
-Closing docs/backend/FE honesty was necessary but **not sufficient** alone for 90+.
-
----
-
-## 20. Remaining bugs / residuals
-
-| Item | Severity | Action |
-|------|----------|--------|
-| Owner `setExpectedChainKey` / window | Residual | Documented; no redeploy |
-| Unbounded proof window | Residual | Disclosed |
-| GatedCreditLine CEI polish | Residual | Documented |
-| Discovery may miss events | Residual | Pin demo |
-| packaging incomplete | P0 human | Submit |
-| Relayer unset | Ops | Wallet path |
-
-No known P0 protocol bug blocking demo of live Restricted consequence.
-
----
-
-## 21. Evidence inventory
-
-| Doc | Role |
-|-----|------|
-| `docs/ATTESTCOIN_EVIDENCE.md` | Live facts + what 0x0FD2 proves/doesn't |
-| `docs/SECURITY_EVIDENCE.md` | Attack matrix → Foundry tests |
-| `docs/ATTESTCOIN_INTEGRATION_SUMMARY.md` | Judge one-pager |
-| `deployments/demo-evidence-public.json` | Public artifact |
-| README live table | Clone-facing |
-
----
-
-## 22. SAFE TO COMMIT / GIT
-
-| Check | Result |
-|-------|--------|
-| Secrets in diff | No |
-| Invariants preserved | Yes |
-| Tests green | Yes |
-| Cursor trailers | Strip if hook appends |
-| Author | CodewithJha |
-
-**SAFE TO COMMIT:** yes (logical commits as planned).
-
----
-
-## 23. NEXT HUMAN ACTION
-
-1. Open the project packaging checklist → confirm FreezeWire entry → fill Integration Summary / GH / deck PDF / demo video → **Submit** before **23:59 ET**.  
-2. Rehearse two-account demo once with Blockscout + Etherscan tabs ready.  
-3. Optional: fund CC3 wallet for live SIGN & BROADCAST.
-
----
-
-## 24. Quick reference + doc map
-
-```text
-CC3 chainId:     102031
-chainKey (ETH):  3
-USDC:            0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
-0x0FD2:          0x0000000000000000000000000000000000000FD2
-Ledger:          0xde64d5037cA820D4aDFa703C4FaF5451be840C9d
-Credit line:     0xB04fFca20e0a992474E6AD501A061973dC9Ed340
-Verifier:        0x6bf238291Bb8262918A1989831856DC6BC47D869
-MockUSD:         0x6943EB32EAb562791f095E91ee288627ADDdC5B3
-Demo account:    0xe05F529f5284D75624eBa386CB716928c3b54A2A
-Demo ETH tx:     0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787
-submitProof tx:  0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45
-Restricted():    0xccc08913
-Status:          RESTRICTED
-```
-
-| Need | Open |
-|------|------|
-| Security evidence | `docs/SECURITY_EVIDENCE.md` |
-| Attestcoin evidence | `docs/ATTESTCOIN_EVIDENCE.md` |
-| Security model | `docs/SECURITY_MODEL.md` |
-| Demo | `docs/DEMO_SPECIFICATION.md` |
-| Integration summary | `docs/ATTESTCOIN_INTEGRATION_SUMMARY.md` |
-| This audit | `docs/TECHNICAL_AUDIT.md` / `report.md` |
-
-**End.** SHIP WITH KNOWN RISKS. Human owns optional packaging.
+- Change plan: [`docs/IMPROVEMENT_PLAN.md`](./IMPROVEMENT_PLAN.md)
+- Security matrix: [`docs/SECURITY_EVIDENCE.md`](./SECURITY_EVIDENCE.md)
+- Public evidence: `deployments/demo-evidence-public.json`, `deployments/demo-proof-public.json`

@@ -1,44 +1,61 @@
 # Security evidence (verified attack matrix)
 
-Judge-facing map from threats → mitigations → Foundry / worker tests.  
-Labels: **VERIFIED** (test or live artifact), **RESIDUAL** (accepted / disclosed), **OUT OF SCOPE**.
+Judge-facing map from threats → attack input → expected → actual → tests.
+Labels: **VERIFIED** (Foundry / worker / live), **RESIDUAL** (accepted / disclosed), **OUT OF SCOPE**.
 
 Do not invent attacks or claim coverage without a linked test.
+Owner `setExpectedChainKey` / `setWindow` residuals are **DOCUMENT ONLY** in this push (no redeploy) — see [`IMPROVEMENT_PLAN.md`](./IMPROVEMENT_PLAN.md).
 
 ---
 
 ## Attack matrix
 
-| Attack / threat | Mitigation | Evidence | Label |
-|---|---|---|---|
-| Impostor emitter (fake USDC) | Constructor-immutable `expectedEmitter` | `AdversarialReceipts.t.sol`, `BlacklistVerifier.t.sol` (T-SEC-EMITTER / T-SEC-OWNER) | VERIFIED |
-| Wrong topic0 (Transfer / Pause / decoy) | Topic allowlist Blacklisted / UnBlacklisted only | `AdversarialReceipts.t.sol` (T-SEC-EVENT / T-SEC-DECOY) | VERIFIED |
-| Cross-account redirect | Account from indexed `topic[1]` only | `EligibilityLedger.t.sol`, decoder tests (T-SEC-ACCOUNT / FR-005) | VERIFIED |
-| Failed source receipt (`status != 1`) | ASC checks receipt status; precompile does not | `AdversarialReceipts.t.sol` (T-SEC-STATUS) | VERIFIED |
-| Wrong Attestcoin `chainKey` | `WrongChainKey` | `BlacklistVerifier.t.sol` (T-SEC-CHAIN) | VERIFIED |
-| Outside height window | `OutsideWindow` | `BlacklistVerifier.t.sol` (T-SEC-WINDOW) | VERIFIED |
-| Caller-supplied forged `txIndex` | Recover from Merkle `isLeft` (`TxIndex`) | `TxIndex.t.sol`, `AdversarialReceipts.t.sol` (T-SEC-TXINDEX); backend `recoverTxIndex` + prove mismatch reject | VERIFIED |
-| Replay same `(chainKey,height,txIndex)` | `processed` / `QueryAlreadyProcessed` | `EligibilityLedger.t.sol` (T-SEC-REPLAY) | VERIFIED |
-| Older UnBlacklisted overrides newer Blacklisted | Position monotonicity | `EligibilityLedger.t.sol` (T-SC-RESTORE) | VERIFIED |
-| Backend / UI invents Restricted | No `setStatus`; worker has no setter API | `SecurityBoundaries.t.sol` (T-SEC-PERM / T-SEC-AUTH); backend `T-API-NOSETTER` | VERIFIED |
-| Owner rotates Circle emitter | No `setExpectedEmitter` | `BlacklistVerifier.t.sol` / `SecurityBoundaries.t.sol` (T-SEC-OWNER) | VERIFIED |
-| Restricted draw / transfer / escrow extract | `Restricted()` | `GatedCreditLine.t.sol` (T-FIN-*), `SecurityBoundaries.t.sol` | VERIFIED |
-| Restricted repay / unused withdraw trapped | Allowed exits | `GatedCreditLine.t.sol` (T-FIN-REPAY / T-FIN-WITHDRAW) | VERIFIED |
-| Proof Builder lie | On-chain `0x0FD2` + consumer checks | Architecture + live `0x0FD2` path in `ATTESTCOIN_EVIDENCE.md` | VERIFIED (design); live demo VERIFIED separately |
-| Oversized POST / unbounded eth_getLogs | Body size + discover range caps | `backend/src/api/index.ts`, `discover.ts` + tests | VERIFIED |
+| Attack / threat | Attack input | Expected | Actual | Test(s) | Label |
+|---|---|---|---|---|---|
+| Impostor emitter (fake USDC) | Receipt log emitter ≠ constructor USDC | No bind / status unchanged | Events length 0; ELIGIBLE | `AdversarialReceipts.t.sol` `test_T_SEC_EMITTER_*`; `BlacklistVerifier.t.sol` | VERIFIED |
+| Wrong topic0 (Transfer / Pause) | Correct emitter, Transfer/Paused topic | Ignored | No Restricted | `test_T_SEC_EVENT_*`, `test_T_SEC_DECOY_*` | VERIFIED |
+| Cross-account redirect | Caller claims alice; log indexes bob | Only bob Restricted | alice ELIGIBLE | `test_incorrectAccountClaimCannotRedirect`; EligibilityLedger account tests | VERIFIED |
+| Failed source receipt | `status != 1` + Blacklisted log | Revert `SourceTxFailed` | Revert; not processed | `test_T_SEC_STATUS_*` | VERIFIED |
+| Wrong Attestcoin chainKey | `submitProof` with chainKey≠expected | `WrongChainKey` | Revert | `test_fixture9_wrongChainKey`; `BlacklistVerifier.t.sol` | VERIFIED |
+| Outside height window | Height outside owner window | `OutsideWindow` | Revert | `BlacklistVerifier.t.sol` T-SEC-WINDOW | VERIFIED |
+| Caller-supplied forged txIndex | Merkle path implies index N; caller wants M | Replay key uses recovered N | M ignored | `TxIndex.t.sol`; `test_T_SEC_TXINDEX_*`; backend prove mismatch reject | VERIFIED |
+| Invalid Merkle sibling | Corrupted sibling hash / mock reject | `ProofRejected` | Revert; no write | `test_invalidMerkleSibling_revertsProofRejected` | VERIFIED |
+| Corrupted continuity | Bad continuity roots / mock reject | `ProofRejected` | Revert; no write | `test_corruptedContinuity_revertsProofRejected` | VERIFIED |
+| Replay same `(chainKey,height,txIndex)` | Second identical submit | `QueryAlreadyProcessed` | Revert | `test_fixture11_replayedProof` | VERIFIED |
+| Older UnBlacklisted overrides newer Blacklisted | Lower height restore after restrict | Skipped / monotonic | Remains Restricted | `test_fixture10_*`; T-SC-RESTORE | VERIFIED |
+| Backend / UI invents Restricted | POST `/v1/set-status` etc. | 404 / not provided | No setter | `SecurityBoundaries.t.sol`; backend `T-API-NOSETTER` | VERIFIED |
+| Owner rotates Circle emitter | Call `setExpectedEmitter` | No such function | Compile/API absent | `BlacklistVerifier` / `SecurityBoundaries` T-SEC-OWNER | VERIFIED |
+| Restricted draw / transfer / extract | draw as Restricted | `Restricted()` | Revert `0xccc08913` | `GatedCreditLine.t.sol` T-FIN-*; live demo evidence | VERIFIED |
+| Restricted repay / unused withdraw | repay / withdraw unused | Allowed | Succeed | `GatedCreditLine.t.sol` T-FIN-REPAY / T-FIN-WITHDRAW | VERIFIED |
+| Proof Builder lie | Fake bundle via worker | On-chain `0x0FD2` + consumer checks | Worker not authority | Architecture + live path `ATTESTCOIN_EVIDENCE.md` | VERIFIED (design); live demo VERIFIED |
+| Oversized POST | Body > 1 MiB | 413 | Rejected | `backend` body-size tests | VERIFIED |
+| Unbounded discover scan | One-sided `fromBlock`/`toBlock` | 400 | Rejected | `discover.test.ts` / `reliability.test.ts` | VERIFIED |
+| Rate-limit map growth | Expired buckets | Pruned periodically | `pruneRateBuckets` | `reliability.test.ts` | VERIFIED |
+| PB/RPC timeout flap | HTTP 5xx / timeout | Bounded retries then fail | Retries ≤2 | `retry.ts` + `reliability.test.ts` | VERIFIED |
 
 ---
 
-## Residuals (ship with known risks)
+## Residuals (ship with known risks) — DOCUMENT ONLY
 
-| Residual | Why accepted for the demo | Label |
-|---|---|---|
-| Owner can still `setExpectedChainKey` / `setWindow` | Operational stall / wrong source chain — **not** emitter swap; redeploy required to make chainKey immutable | RESIDUAL |
-| Default unset = `ELIGIBLE` | Circle-compatible fail-open; must be spoken in demo (DEMO-003) | RESIDUAL (disclosed) |
-| Proof window `(0,0)` unbounded | Demo historical tx admissible; not production freshness | RESIDUAL (disclosed) |
-| CEI / reentrancy polish on `GatedCreditLine` | External ERC-20 calls after local accounting updates; MockUSD + trusted demo asset; full CEI rewrite deferred | RESIDUAL |
-| Discovery completeness | Worker may miss events; must not invent candidates | RESIDUAL |
-| Relayer key / gas grief | Localhost / optional `RELAY_GATE`; not eligibility authority | RESIDUAL (ops) |
+| Residual | Attack / concern | Why accepted | Label |
+|---|---|---|---|
+| Owner `setExpectedChainKey` / `setWindow` | Stall proofs / widen freshness | Not emitter swap; not `setStatus`; **no Attestcoin bypass**. Immutable chainKey needs redeploy — deferred. | RESIDUAL |
+| Window `(0,0)` unbounded | Stale historical proofs admissible | Demo height must remain valid; production should `setWindow` after measuring attested lag — **ops note only** (do not call without controlled deployer session). | RESIDUAL (disclosed) |
+| Default unset = `ELIGIBLE` | “Cleanliness” misread | Circle-compatible fail-open; demo script DEMO-003 | RESIDUAL (disclosed) |
+| GatedCreditLine CEI polish | Reentrancy via malicious ERC-20 | MockUSD trusted demo asset; CEI rewrite = redeploy risk | RESIDUAL |
+| Discovery completeness | Missed eth_getLogs | Worker may miss; must not invent candidates | RESIDUAL |
+| Relayer key / gas grief | Exhaust local relay | Localhost / optional `RELAY_GATE`; not eligibility authority | RESIDUAL (ops) |
+
+### Optional live `setWindow` (ops note — not executed here)
+
+If a funded **owner** key is available in a locked-down shell (never print the key):
+
+1. Measure current attested height and demo source header (`25705174`).
+2. Choose `minHeight` / `maxHeight` that still admit the demo proof with lag margin.
+3. Call `BlacklistVerifier.setWindow(min, max)` once; verify `OutsideWindow` for stale heights in Foundry first.
+4. Record public tx hash in evidence — **do not** commit private keys.
+
+This push **does not** perform that call (avoid ops risk mid-submission).
 
 ---
 
@@ -50,6 +67,7 @@ BlockProver proves **inclusion + continuity** of the submitted encoded transacti
 
 ## Related
 
+- Change plan: [`IMPROVEMENT_PLAN.md`](./IMPROVEMENT_PLAN.md)
 - Normative model: [`SECURITY_MODEL.md`](./SECURITY_MODEL.md), [`THREAT_MODEL.md`](./THREAT_MODEL.md)
 - Test IDs: [`TEST_STRATEGY.md`](./TEST_STRATEGY.md)
 - Live Attestcoin facts: [`ATTESTCOIN_EVIDENCE.md`](./ATTESTCOIN_EVIDENCE.md)

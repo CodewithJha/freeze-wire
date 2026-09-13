@@ -4,7 +4,7 @@
 **Project:** open-source Creditcoin project  
 **Audience:** reviewers (submission-ready)  
 **Normative detail:** [`ATTESTCOIN_INTEGRATION.md`](./ATTESTCOIN_INTEGRATION.md)  
-**Live public evidence:** `deployments/cc3-testnet.json`, `deployments/demo-evidence-public.json` (verified locally; typically gitignored)
+**Live public evidence:** committed `deployments/demo-evidence-public.json` + `deployments/demo-proof-public.json` (public fields only). Local `deployments/cc3-testnet.json` may exist for ops and stays gitignored.
 
 FreezeWire uses **Attestcoin readability** so Creditcoin CC3 can inherit a real Ethereum mainnet Circle USDC `Blacklisted` / `UnBlacklisted` fact **without** trusting a backend oracle. Eligibility moves only through permissionless `submitProof` → BlockProver `0x0FD2` → consumer checks → `EligibilityLedger`. There is **no** `setStatus` / `setRestricted`.
 
