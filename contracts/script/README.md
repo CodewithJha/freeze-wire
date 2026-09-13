@@ -19,8 +19,13 @@ mkdir -p deployments
 forge script contracts/script/DeployCC3Testnet.s.sol:DeployCC3Testnet \
   --rpc-url "$CC3_RPC_URL" \
   --broadcast \
-  --legacy
+  --legacy \
+  --evm-version shanghai \
+  --slow \
+  --gas-estimate-multiplier 500
 ```
+
+Prefer `./scripts/deploy-cc3-testnet.sh` (sets the same flags). `foundry.toml` sets `bypass_prevrandao = true` for CC3 simulation.
 
 On success writes **gitignored** `deployments/cc3-testnet.json` (public addresses only).
 

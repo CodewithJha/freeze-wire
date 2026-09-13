@@ -19,6 +19,11 @@ if [[ -z "${DEPLOYER_PRIVATE_KEY:-}" ]]; then
   exit 2
 fi
 
+# forge vm.envUint requires a 0x-prefixed hex string; normalize without rewriting .env
+if [[ ! "$DEPLOYER_PRIVATE_KEY" =~ ^0[xX] ]]; then
+  export DEPLOYER_PRIVATE_KEY="0x${DEPLOYER_PRIVATE_KEY}"
+fi
+
 CC3_RPC_URL="${CC3_RPC_URL:-https://rpc.cc3-testnet.creditcoin.network}"
 CC3_CHAIN_ID="${CC3_CHAIN_ID:-102031}"
 export CC3_CHAIN_ID
@@ -31,7 +36,10 @@ echo "Deploying to chainId=$CC3_CHAIN_ID rpc=$CC3_RPC_URL"
 forge script contracts/script/DeployCC3Testnet.s.sol:DeployCC3Testnet \
   --rpc-url "$CC3_RPC_URL" \
   --broadcast \
-  --legacy
+  --legacy \
+  --evm-version shanghai \
+  --slow \
+  --gas-estimate-multiplier 500
 
 echo "Wrote $DEPLOYMENT_OUT_PATH"
 node scripts/sync-deployment-env.mjs
