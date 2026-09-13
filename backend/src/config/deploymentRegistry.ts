@@ -31,25 +31,37 @@ export function defaultDeploymentRegistryPath(): string {
 }
 
 /**
- * Load gitignored deployments/cc3-testnet.json (or DEPLOYMENT_REGISTRY_PATH).
+ * Load deployments/cc3-testnet.json (or DEPLOYMENT_REGISTRY_PATH).
  * Returns undefined when the file is absent — undeployed is a valid state.
+ *
+ * Under NODE_ENV=test, skips the default live registry so unit tests stay
+ * deterministic when a real deploy file is present. Opt in with
+ * TEST_USE_REGISTRY=1, or pass an explicit path / DEPLOYMENT_REGISTRY_PATH.
+ * Worker/runtime (non-test) behavior is unchanged.
  */
-export function loadDeploymentRegistry(
-  registryPath = process.env.DEPLOYMENT_REGISTRY_PATH ?? defaultDeploymentRegistryPath(),
-): DeploymentRegistry | undefined {
-  if (!existsSync(registryPath)) {
+export function loadDeploymentRegistry(registryPath?: string): DeploymentRegistry | undefined {
+  const explicit = registryPath ?? process.env.DEPLOYMENT_REGISTRY_PATH;
+  if (
+    process.env.NODE_ENV === 'test' &&
+    process.env.TEST_USE_REGISTRY !== '1' &&
+    explicit === undefined
+  ) {
+    return undefined;
+  }
+  const pathToLoad = explicit ?? defaultDeploymentRegistryPath();
+  if (!existsSync(pathToLoad)) {
     return undefined;
   }
   let raw: unknown;
   try {
-    raw = JSON.parse(readFileSync(registryPath, 'utf8')) as unknown;
+    raw = JSON.parse(readFileSync(pathToLoad, 'utf8')) as unknown;
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    throw new Error(`Failed to read deployment registry at ${registryPath}: ${reason}`);
+    throw new Error(`Failed to read deployment registry at ${pathToLoad}: ${reason}`);
   }
   const parsed = deploymentRegistrySchema.safeParse(raw);
   if (!parsed.success) {
-    throw new Error(`Invalid deployment registry at ${registryPath}: ${parsed.error.message}`);
+    throw new Error(`Invalid deployment registry at ${pathToLoad}: ${parsed.error.message}`);
   }
   const zero = '0x0000000000000000000000000000000000000000';
   const addrs = parsed.data.addresses;
@@ -60,7 +72,7 @@ export function loadDeploymentRegistry(
     addrs.gatedCreditLine.toLowerCase() === zero
   ) {
     throw new Error(
-      `Deployment registry at ${registryPath} still has placeholder zero addresses — replace after a real deploy`,
+      `Deployment registry at ${pathToLoad} still has placeholder zero addresses — replace after a real deploy`,
     );
   }
   return parsed.data;
