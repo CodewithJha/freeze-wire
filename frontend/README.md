@@ -1,6 +1,6 @@
 # frontend/
 
-Judge-facing FreezeWire demo workspace (Phase 5). Vite + React + TypeScript + Tailwind + shadcn/ui primitives. The UI is untrusted — eligibility and credit gating are enforced on Creditcoin contracts; the worker is convenience only.
+FreezeWire demo UI workspace (Phase 5). Vite + React + TypeScript + Tailwind + shadcn/ui primitives. The UI is untrusted — eligibility and credit gating are enforced on Creditcoin contracts; the worker is convenience only.
 
 ## Run
 
@@ -16,7 +16,7 @@ Requires the Phase 4 worker at `VITE_API_BASE_URL` (default `http://127.0.0.1:80
 
 ## Demo path (two-account — see operator runbook)
 
-Live account **B** (`0xe05F…`) is already **RESTRICTED** from a prior permissionless `submitProof`. Do **not** narrate a live ELIGIBLE→RESTRICTED flip on that address.
+Live account **B** (`0xe05F…`) is already **RESTRICTED** from a prior permissionless `submitProof`. Do **not** claim a live ELIGIBLE→RESTRICTED flip on that address.
 
 1. Confirm worker health in the header.
 2. **TRACE EVENT** — real Ethereum Blacklisted tx for **B** from `GET /v1/evidence/demo`.
@@ -26,7 +26,7 @@ Live account **B** (`0xe05F…`) is already **RESTRICTED** from a prior permissi
 6. Show consequence as **B**: DRAW blocked; REPAY / WITHDRAW UNUSED available. Prefer live `Restricted()` when `VITE_CREDIT_LINE_ADDRESS` is set.
 7. **Account A** (`0x6b0745…`) for the “before” draw — use wallet/explorer, not LOAD DEMO (UI binds B).
 
-Operator checklist: [`docs/DEMO_RUNBOOK.md`](../docs/DEMO_RUNBOOK.md). Talk script: [`docs/DEMO_SPECIFICATION.md`](../docs/DEMO_SPECIFICATION.md).
+Operator checklist: [`docs/DEMO_RUNBOOK.md`](../docs/DEMO_RUNBOOK.md). Product specification: [`docs/DEMO_SPECIFICATION.md`](../docs/DEMO_SPECIFICATION.md).
 
 ## Structure
 

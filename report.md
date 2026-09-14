@@ -1,6 +1,6 @@
 # FREEZEWIRE — TECHNICAL AUDIT
 
-**Generated:** 2026-09-13 (IST evening, pre-submission red-team consolidation)
+**Generated:** 2026-09-13 (IST evening, red-team consolidation)
 **Workspace:** `/Users/priyanshujha/Projects/freeze-wire`
 **Basis:** FINAL repo state after five parallel audits (product/docs, FE honesty, demo ops, security red-team, backend reliability) + high-confidence low-risk fixes.
 **Do not copy prior audit scores** — recomputed below. Labels: VERIFIED / ESTIMATE / INFERENCE / UNKNOWN.
@@ -15,12 +15,11 @@
 |---|---|---|
 | Ship decision | **SHIP WITH KNOWN RISKS** | OPINION |
 | Technical score | **~88/100** | ESTIMATE |
-| Overall (if packaging incomplete) | **~75/100** | ESTIMATE |
-| Confidence | Medium-high on tech; packaging-gated on overall | ESTIMATE |
-| Previous tech (stage-2) | ~87/100 | HISTORICAL |
+| Confidence | Medium-high on tech | ESTIMATE |
+| Previous tech (earlier pass) | ~87/100 | HISTORICAL |
 | Delta | **+1** tech (honesty Vitest expansion, DEMO_RUNBOOK, README differentiation/counts, RPC transport retry correctness, security re-verify) | ESTIMATE |
 
-**Further polish:** **Not forced.** Tech can defend high-80s. Further polish still blocked primarily by **human packaging submit + deck PDF + demo video**, plus residual owner/window/CEI disclosures.
+**Further polish:** Remaining gains mainly require residual owner/window/CEI work or scope expansion — not cosmetic packaging.
 
 **NO FURTHER HIGH-ROI PROTOCOL CHANGES** remain without redeploy or scope expansion (indexer / CEI rewrite / immutable chainKey).
 
@@ -32,18 +31,18 @@
 5. Worker fail-closed boundaries (no setter; body/range/txIndex; transport retries)
 
 ### Weakest 5
-1. packaging submit / video / deck UNKNOWN
-2. Submission packaging completeness (human)
-3. Owner-tunable chainKey/window (documented residual)
-4. Unbounded proof window (disclosed)
-5. Demo already-RESTRICTED choreography (mitigated by runbook; still presenter skill)
+1. Owner-tunable chainKey/window (documented residual)
+2. Unbounded proof window (disclosed)
+3. Demo already-RESTRICTED choreography (mitigated by runbook; still needs operator rehearsal)
+4. Thin FE e2e (no Playwright)
+5. No continuous indexer (architecture clear; product gap)
 
 ### Remaining P0
-- Human: confirm packaging platform **Submit** with Integration Summary + GH + deck + video before deadline
+- None protocol-blocking. Demo ops: rehearse two-account script + empty RELAY wallet path for live demo.
 
 ### Remaining P1
 - Owner/window residuals (DOCUMENT ONLY — no redeploy)
-- Empty RELAY → wallet path on stage (rehearse)
+- Empty RELAY → wallet path for live demo (rehearse)
 - CEI polish deferred
 
 ---
@@ -93,7 +92,7 @@ Layout: `contracts/` · `backend/` · `frontend/` · `docs/` · `config/` · `sc
 
 Unchanged spine: ETH fact → Proof Builder → `0x0FD2` → `BlacklistVerifier` → `EligibilityLedger` → `GatedCreditLine`.
 
-Security red-team (pre-submission pass): **no exploitable Attestcoin/ledger/credit-line bypass.** Owner/window/CEI = residual only. Matrix in `docs/SECURITY_EVIDENCE.md` re-confirmed.
+Security red-team (consolidation pass): **no exploitable Attestcoin/ledger/credit-line bypass.** Owner/window/CEI = residual only. Matrix in `docs/SECURITY_EVIDENCE.md` re-confirmed.
 
 ---
 
@@ -128,7 +127,7 @@ Security red-team (pre-submission pass): **no exploitable Attestcoin/ledger/cred
 
 ---
 
-## 11. Dimension scorecard (/100) — ESTIMATE
+## 11. Quality dimension estimates (/100) — ESTIMATE
 
 | Dimension | Score | Evidence | Deduction |
 |---|---:|---|---|
@@ -150,21 +149,21 @@ Security red-team (pre-submission pass): **no exploitable Attestcoin/ledger/cred
 | Testing | 88 | 95/45/17 | No Playwright |
 | Documentation | 92 | Runbook + evidence + differentiation | — |
 | Demo | 82 | Runbook + two-account script | Human rehearsal |
-| Product | 76 | Clear ICP | Demo scope |
+| Product | 76 | Clear ICP | Testnet MVP scope |
 
-**Weighted tech overall: ~88.** Overall release score still packaging-gated.
+**Weighted tech overall: ~88.**
 
 ---
 
-## 12. Exact 90+ gap (top 5)
+## 12. Largest remaining gaps (top 5)
 
-| # | Current | Why judges care | Fix | Effort | Risk | Gain |
+| # | Current | Why it matters | Fix | Effort | Risk | Gain |
 |---|---|---|---|---|---|---|
-| 1 | packaging submit unknown | Eligibility | Human Submit + video + deck | Human | Low | +8–15 overall |
-| 2 | Owner chainKey/window | Governance residual | Document (done) or redeploy immutable | L | High if redeploy | +1–2 tech |
-| 3 | Unbounded window | Freshness | Ops `setWindow` later | M | Demo break | +0.5–1 |
-| 4 | Thin FE e2e | Demo confidence | Optional Playwright | L | Time | +1 |
-| 5 | CEI polish | Auditor optics | Redeploy rewrite | L | High | +0.5–1 |
+| 1 | Owner chainKey/window | Governance residual | Document (done) or redeploy immutable | L | High if redeploy | +1–2 tech |
+| 2 | Unbounded window | Freshness | Ops `setWindow` later | M | Demo break | +0.5–1 |
+| 3 | Thin FE e2e | Demo confidence | Optional Playwright | L | Time | +1 |
+| 4 | CEI polish | Auditor optics | Redeploy rewrite | L | High | +0.5–1 |
+| 5 | No continuous indexer | Scalability narrative | Out of MVP scope | XL | Scope creep | +1 |
 
 ---
 
@@ -172,7 +171,6 @@ Security red-team (pre-submission pass): **no exploitable Attestcoin/ledger/cred
 
 | Sev | Item | Status |
 |---|---|---|
-| P0 | packaging submit not verified by agent | OPEN (human) |
 | P1 | Owner setExpectedChainKey/setWindow | RESIDUAL documented |
 | P1 | Window 0/0 | RESIDUAL documented |
 | P2 | GatedCreditLine CEI | DEFERRED |
@@ -186,7 +184,7 @@ Security red-team (pre-submission pass): **no exploitable Attestcoin/ledger/cred
 
 **SHIP WITH KNOWN RISKS.**
 
-Tech is slightly stronger than stage-2 (~87→~88) with **no protocol / redeploy changes**. Do **not** claim a polished overall score until optional packaging is confirmed by a human.
+Tech is slightly stronger than the earlier pass (~87→~88) with **no protocol / redeploy changes**. Do **not** claim production-ready without closing owner/window residuals and demo rehearsal.
 
 ---
 

@@ -1,6 +1,6 @@
 # Smart contract specification
 
-Solidity 0.8.23. Foundry. Custom errors. No owner eligibility setter. Interfaces in `contracts/src/interfaces/`. Implementation **not** in this gate.
+Solidity 0.8.23. Foundry. Custom errors. No owner eligibility setter. Interfaces in `contracts/src/interfaces/`. Implementation **not** in the documentation baseline.
 
 ---
 
@@ -204,7 +204,7 @@ No check on deposit, repay, withdraw unused, refundEscrow.
 
 ### Escrow MVP
 
-Minimal: `lockEscrow(id, amount)` pulls from user; `releaseEscrow(id, to)` pays `to` if caller is locker or a designated role — **demo:** locker-only release, still Restricted-gated; `refundEscrow` returns to locker, not Restricted-gated.
+Minimal: `lockEscrow(id, amount)` pulls from user; `releaseEscrow(id, to)` pays `to` if caller is locker or a designated role — **MVP:** locker-only release, still Restricted-gated; `refundEscrow` returns to locker, not Restricted-gated.
 
 Do not build a marketplace.
 

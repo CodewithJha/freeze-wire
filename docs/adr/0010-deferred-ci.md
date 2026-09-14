@@ -13,7 +13,7 @@ Document quality gates; do not add a GitHub Action that runs `forge test` until 
 
 ## Why
 
-A workflow in Gate 5A would fail and create noise. `.github/README.md` recorded the intent.
+A workflow before application code existed would fail and create noise. `.github/README.md` recorded the intent.
 
 ## Amended decision (Phase 1)
 

@@ -31,11 +31,11 @@
     "notes": [
       "FACT: chainKeys, precompiles, proof builder URL from docs.attestcoin.org chains/environments (fetched 2026-09-10).",
       "FACT: CC3 testnet chain id 102031 from docs.creditcoin.org endpoints (fetched 2026-09-10).",
-      "ASSUMPTION: freshness window 0/0 means 'any attested height' for the demo demo historical event. Tighten for production."
+      "ASSUMPTION: freshness window 0/0 means 'any attested height' for the historical demo event. Tighten for production."
     ]
   },
   "cc3-mainnet": {
-    "name": "Creditcoin CC3 mainnet (out of demo scope)",
+    "name": "Creditcoin CC3 mainnet (reference only — not a FreezeWire deploy target)",
     "cc3ChainId": 102030,
     "sourceChainKey": 1,
     "sourceChainName": "Ethereum mainnet",
@@ -45,7 +45,7 @@
     "proofBuilderUrl": "https://proofbuilder.cc3-mainnet-usc.creditcoin.network",
     "notes": [
       "FACT: on CC3 mainnet, Ethereum mainnet chainKey is 1, not 3.",
-      "Do not deploy FreezeWire to mainnet for this demo."
+      "Do not deploy FreezeWire to mainnet without a production readiness review."
     ]
   }
 }

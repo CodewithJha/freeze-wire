@@ -46,9 +46,9 @@ If Proof Builder cannot serve this height, **swap to a newer real USDC Blacklist
 
 ---
 
-## Script (0:00–3:00)
+## Script (short live walkthrough — approximate pacing)
 
-| Time | Screen | Action | Expected result | Judge takeaway |
+| Time | Screen | Action | Expected result | Takeaway |
 |---|---|---|---|---|
 | **0:00–0:20** | Slide / UI | “Circle blacklists an address on Ethereum. Creditcoin credit won’t inherit that unless you trust an API. We don’t.” Show canonical USDC. | Problem framed. | Specific, real. |
 | **0:20–0:45** | UI as **account A** (`0x6b0745…`) | Show `ELIGIBLE`. Deposit. Draw a small amount — succeeds. Say: **default ELIGIBLE ≠ proven clean**. | Draw success on Blockscout. | DEMO-003 honesty. |
@@ -56,7 +56,7 @@ If Proof Builder cannot serve this height, **swap to a newer real USDC Blacklist
 | **1:10–1:35** | Worker `/v1/prove` or UI Prove | Speak **INCLUSION · STATUS · EMITTER · EVENT · ACCOUNT**. Bundle ready ≠ ledger write. | Proof JSON; precompile path clear. | Attestcoin load-bearing (DEMO-002). |
 | **1:35–2:05** | Blockscout ledger / prior tx | Show `submitProof` `0x07e3…` and/or live wallet submit. `Restricted` for **B**. No `setStatus`. | Ledger `RESTRICTED`. | CTC state from proof. |
 | **2:05–2:35** | UI / wallet as **B** | Draw → reverts `Restricted()`. Repay succeeds. Optional unused withdraw. | Financial consequence. | DEMO-004; exits not trapped. |
-| **2:35–3:00** | Face / last slide | Speak DEMO-005 closer verbatim. | — | Backend is not the oracle. |
+| **2:35–3:00** | Closing beat | Speak DEMO-005 closer verbatim. | — | Backend is not the oracle. |
 
 ---
 
@@ -71,7 +71,7 @@ If Proof Builder cannot serve this height, **swap to a newer real USDC Blacklist
 
 ---
 
-## Judge Q&A (short)
+## Demo Q&A (short)
 
 See `COMPETITIVE_POSITIONING.md` and `SECURITY_MODEL.md`.
 
@@ -97,5 +97,5 @@ Full operator checklist: [`DEMO_RUNBOOK.md`](./DEMO_RUNBOOK.md).
 - Two explorer tabs pre-opened (Etherscan demo tx + Blockscout `submitProof`)
 - Worker healthy (`/v1/health`)
 - Funded wallets for **A** (and **B** if showing live draw revert)
-- Timer visible; rehearse 3:00 closer
+- Operator checklist rehearsed; practice the closing beat
 - Backup: `cast call` `statusOf` + Foundry `T-SEC-*` if UI fails

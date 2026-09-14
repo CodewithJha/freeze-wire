@@ -2,7 +2,7 @@
 
 Attestcoin is **load-bearing**. Eligibility cannot move without a proof that BlockProver accepts. This page freezes the integration against official docs fetched **2026-09-10**. See `RESEARCH_BASELINE.md` for provenance.
 
-**Submission one-pager:** [`ATTESTCOIN_INTEGRATION_SUMMARY.md`](./ATTESTCOIN_INTEGRATION_SUMMARY.md) (14 points + removal test + live evidence).
+**Short briefing:** [`ATTESTCOIN_INTEGRATION_SUMMARY.md`](./ATTESTCOIN_INTEGRATION_SUMMARY.md) (14 points + removal test + live evidence).
 **Live verified facts:** [`ATTESTCOIN_EVIDENCE.md`](./ATTESTCOIN_EVIDENCE.md) · **Attack matrix:** [`SECURITY_EVIDENCE.md`](./SECURITY_EVIDENCE.md).
 
 ### Proof chain (short)
@@ -18,7 +18,7 @@ ETH USDC Blacklisted → Proof Builder bundle → submitProof → 0x0FD2
 
 ## 1. Source chain
 
-| Item | Demo value | Classification |
+| Item | Value | Classification |
 |---|---|---|
 | Chain | Ethereum **mainnet** | FACT (product) |
 | Contract | Circle USDC `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | FACT |
@@ -40,7 +40,7 @@ From [Attestcoin Protocol Chains — Environments](https://docs.attestcoin.org/a
 | Ethereum Sepolia | 1 |
 | Ethereum mainnet | 3 |
 
-**CC3 mainnet** (do not deploy this demo)
+**CC3 mainnet** (out of scope for current public deploy)
 
 | Source | chainKey |
 |---|---|
@@ -215,7 +215,7 @@ Mark processed **after** successful precompile verify, **before** applying busin
 
 ## 10. Freshness
 
-Not a protocol field. Application window `[minHeight, maxHeight]` inclusive; `0,0` = unbounded (demo default for the August 2026 demo tx). Production should set a max age. Continuity gas grows with lag (FACT gas docs: ~10× after a day of checkpoint thinning).
+Not a protocol field. Application window `[minHeight, maxHeight]` inclusive; `0,0` = unbounded (testnet default for the August 2026 demo tx). Production should set a max age. Continuity gas grows with lag (FACT gas docs: ~10× after a day of checkpoint thinning).
 
 `OutsideWindow` if bounds set and height outside.
 

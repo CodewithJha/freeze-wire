@@ -1,6 +1,6 @@
 # Contributing
 
-FreezeWire is a open-source Creditcoin project project. Documentation in `docs/` is the **source of truth**. Code follows the docs; docs are not rewritten after the fact to match improvisation.
+FreezeWire is an independent open-source project. Documentation in `docs/` is the **source of truth**. Code follows the docs; docs are not rewritten after the fact to match improvisation.
 
 ## Before writing application code
 

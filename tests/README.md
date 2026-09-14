@@ -8,6 +8,6 @@ This directory is for:
 - requirement-to-test matrices that are executable later
 - fixtures that are not Solidity (e.g. recorded Proof Builder responses used only in tests)
 
-No product logic in Gate 5A.
+No product logic in this harness directory.
 
 See `docs/TEST_STRATEGY.md`.

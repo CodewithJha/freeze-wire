@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FreezeWire — Technical Whitepaper</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="assets/instrument-sans.css" />
+<link rel="stylesheet" href="assets/ibm-plex-mono.css" />
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-elev: #121212;
+    --bg-card: #161616;
+    --line: #2a2a2a;
+    --line-strong: #3a3a3a;
+    --text: #f2f2f0;
+    --muted: #9a9a94;
+    --dim: #6b6b66;
+    --accent: #D6FF3F;
+    --accent-dim: rgba(214, 255, 63, 0.14);
+    --danger: #ff6b6b;
+    --ok: #7dffb3;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Instrument Sans", system-ui, sans-serif;
+    font-size: 10.25pt;
+    line-height: 1.48;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono, table.kv td:last-child, .addr {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 9pt;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  code {
+    background: var(--bg-elev);
+    padding: 0.15em 0.4em;
+    border: 1px solid var(--line);
+    white-space: pre-wrap;
+  }
+  h1, h2, h3 {
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    word-spacing: 0.14em;
+    margin: 0 0 0.55em;
+  }
+  h2 {
+    font-size: 14.5pt;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.4em;
+    margin-top: 0;
+    margin-bottom: 0.85em;
+    line-height: 1.4;
+  }
+  h2 .num {
+    color: var(--accent);
+    margin-right: 0.7em;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11pt;
+    letter-spacing: 0.06em;
+    word-spacing: normal;
+  }
+  h3 {
+    font-size: 11.5pt;
+    color: var(--text);
+    margin-top: 1.15em;
+    margin-bottom: 0.45em;
+  }
+  p { margin: 0 0 0.75em; color: #e4e4e0; }
+  ul, ol { margin: 0 0 0.85em; padding-left: 1.35em; }
+  li { margin-bottom: 0.35em; padding-right: 2mm; }
+  .muted { color: var(--muted); }
+  .dim { color: var(--dim); }
+
+  /* Physical page: zero CSS margin; inset via .pad (box-decoration-break clones per page) */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  .pad {
+    padding: 18mm 20mm 22mm 20mm; /* ~6–7.5% T/B, ~9.5% L/R on A4 */
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    background: var(--bg);
+    min-height: 100%;
+  }
+  .section {
+    margin: 0 0 4mm;
+    max-width: 100%;
+  }
+  /* After cover only — then continuous flow */
+  .section.page { break-before: page; page-break-before: always; }
+  .keep { break-inside: avoid; page-break-inside: avoid; }
+  h3 { break-after: avoid; page-break-after: avoid; }
+  .grid2, .grid3 { break-inside: avoid; page-break-inside: avoid; }
+  table { break-inside: auto; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Cover */
+  .cover {
+    display: flex; flex-direction: column;
+    min-height: 230mm;
+    justify-content: space-between;
+    background:
+      radial-gradient(ellipse 80% 50% at 80% 0%, rgba(214,255,63,0.08), transparent 55%),
+      linear-gradient(180deg, #0c0c0c 0%, #080808 100%);
+    border: 1px solid var(--line);
+    padding: 10mm 8mm 8mm;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8pt;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .brand {
+    font-size: 40pt;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    word-spacing: 0.06em;
+    line-height: 0.98;
+    margin: 16mm 0 6mm;
+  }
+  .brand .slash { color: #555; }
+  .brand .wire { color: var(--accent); }
+  .tagline {
+    font-size: 17pt;
+    font-weight: 600;
+    max-width: 32em;
+    margin-bottom: 4mm;
+    word-spacing: 0.06em;
+  }
+  .lede { max-width: 38em; color: var(--muted); font-size: 11pt; line-height: 1.5; }
+  .cover-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    margin-top: 12mm;
+    padding-top: 6mm;
+    border-top: 1px solid var(--line);
+    font-size: 9pt;
+  }
+  .cover-meta dt {
+    color: var(--dim);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .cover-meta dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+  .status-pill {
+    display: inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(214,255,63,0.35);
+    padding: 3px 9px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8pt;
+    letter-spacing: 0.06em;
+  }
+
+  .callout {
+    background: var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    padding: 11px 14px;
+    margin: 10px 0 12px;
+    font-weight: 600;
+    font-size: 10.25pt;
+    line-height: 1.45;
+  }
+  .callout.soft {
+    background: var(--bg-elev);
+    border-left-color: var(--line-strong);
+    font-weight: 500;
+    color: #ddd;
+  }
+  .callout.danger {
+    background: rgba(255,107,107,0.08);
+    border-left-color: var(--danger);
+    color: #ffd0d0;
+    font-weight: 500;
+  }
+
+  .flow {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px;
+    margin: 12px 0 16px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8pt;
+  }
+  .flow span {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    padding: 6px 8px;
+  }
+  .flow .arr { border: none; background: transparent; color: var(--accent); padding: 0 3px; }
+  .flow .hi { border-color: rgba(214,255,63,0.45); color: var(--accent); }
+
+  table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin: 10px 0 14px;
+    font-size: 9.25pt;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.45;
+    min-height: 1.55em;
+  }
+  th {
+    background: var(--bg-elev);
+    color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.75pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  table.kv col.k { width: 30%; }
+  table.kv col.v { width: 70%; }
+  table.kv td:first-child {
+    width: 30%;
+    color: var(--muted);
+    white-space: normal;
+    font-family: "Instrument Sans", system-ui, sans-serif;
+    font-size: 9.25pt;
+  }
+  table.kv td:last-child {
+    width: 70%;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 8.75pt;
+  }
+  table.contracts col.c1 { width: 24%; }
+  table.contracts col.c2 { width: 34%; }
+  table.contracts col.c3 { width: 42%; }
+  table.api col.m { width: 12%; }
+  table.api col.p { width: 32%; }
+  table.api col.n { width: 56%; }
+  table.api td:nth-child(2) code {
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+  table.suite col.s { width: 18%; }
+  table.suite col.r { width: 48%; }
+  table.suite col.c { width: 34%; }
+  table.threat3 col.a { width: 28%; }
+  table.threat3 col.b { width: 36%; }
+  table.threat3 col.c { width: 36%; }
+  table.check2 col.a { width: 42%; }
+  table.check2 col.b { width: 58%; }
+  .check { color: var(--ok); }
+  .x { color: var(--danger); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0 14px; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+  }
+  .card h4 {
+    margin: 0 0 8px;
+    font-size: 9.5pt;
+    color: var(--accent);
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    word-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .card p { margin: 0; font-size: 9.25pt; color: #ccc; line-height: 1.45; }
+
+  .arch {
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    padding: 10px 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8.25pt;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    margin: 8px 0 12px;
+    max-width: 100%;
+  }
+  .arch.shell {
+    white-space: pre-wrap;
+  }
+
+  .hero-shot {
+    width: 100%;
+    max-height: 48mm;
+    object-fit: cover;
+    object-position: top center;
+    border: 1px solid var(--line);
+    margin: 8px 0 4px;
+    display: block;
+  }
+  .caption {
+    font-size: 8pt;
+    color: var(--dim);
+    font-family: "IBM Plex Mono", monospace;
+    margin-bottom: 10px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 14px; }
+  .tiny { font-size: 8.75pt; color: var(--muted); line-height: 1.45; }
+  .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.5pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .badge {
+    border: 1px solid var(--line);
+    padding: 4px 9px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.75pt;
+    color: var(--muted);
+  }
+  .badge.live { border-color: rgba(214,255,63,0.4); color: var(--accent); }
+  .badge.testnet { border-color: #555; }
+
+  /* URL display: short label, full href on click */
+  a.url-label { font-family: "IBM Plex Mono", monospace; font-size: 8.75pt; }
+</style>
+</head>
+<body>
+<div class="pad">
+
+<!-- ===================== COVER ===================== -->
+<section class="section">
+  <div class="cover">
+    <div>
+      <div class="eyebrow">Technical Whitepaper · DeFi · Creditcoin CC3</div>
+      <div class="brand">FREEZE<span class="slash">/</span><span class="wire">WIRE</span></div>
+      <div class="tagline">Prove the event. Enforce the outcome.</div>
+      <p class="lede">Cryptographic counterparty compliance for Creditcoin: a real Ethereum mainnet Circle USDC <code>Blacklisted</code> fact becomes a Creditcoin eligibility state — only after Attestcoin proves inclusion and FreezeWire consumer checks bind the event.</p>
+      <div class="badge-row" style="margin-top:10mm">
+        <span class="badge live">LIVE · CC3 TESTNET 102031</span>
+        <span class="badge live">ATTESTCOIN chainKey 3</span>
+        <span class="badge testnet">TESTNET SCOPE</span>
+        <span class="badge testnet">NOT MAINNET PRODUCTION</span>
+      </div>
+    </div>
+    <div>
+      <div class="callout">“The backend never told Creditcoin the address was blacklisted. The Attestcoin proof did.”</div>
+      <dl class="cover-meta">
+        <div>
+          <dt>Public frontend</dt>
+          <dd><a class="url-label" href="https://frontend-bice-pi-49.vercel.app">frontend-bice-pi-49.vercel.app</a></dd>
+          <dt>Public backend</dt>
+          <dd><a class="url-label" href="https://freezewire-backend.onrender.com/v1/health">freezewire-backend.onrender.com</a></dd>
+        </div>
+        <div>
+          <dt>GitHub</dt>
+          <dd><a class="url-label" href="https://github.com/CodewithJha/freeze-wire">github.com/CodewithJha/freeze-wire</a></dd>
+          <dt>License / status</dt>
+          <dd>MIT · <span class="status-pill">CC3 TESTNET LIVE</span></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 02 EXEC SUMMARY ===================== -->
+<section class="section page">
+  <h2><span class="num">01</span> Executive summary</h2>
+  <p>Creditcoin smart contracts cannot natively read Ethereum logs. When Circle marks an address <code>Blacklisted</code> on Ethereum mainnet USDC, CTC credit venues stay blind unless something bridges that fact. The naive bridge — a keeper calling <code>setRestricted</code> — makes a single key the compliance oracle.</p>
+  <p><strong>FreezeWire</strong> inherits that Circle address-level flag into Creditcoin CC3 gated credit <em>without</em> a backend eligibility oracle. Path: real mainnet event → Attestcoin Merkle + continuity proof → BlockProver <code>0x0FD2</code> → FreezeWire consumer checks → <code>EligibilityLedger</code> → <code>GatedCreditLine</code>.</p>
+
+  <div class="flow">
+    <span>ETH Mainnet</span><span class="arr">→</span>
+    <span>USDC Blacklisted</span><span class="arr">→</span>
+    <span>Attestcoin proof</span><span class="arr">→</span>
+    <span class="hi">0x0FD2</span><span class="arr">→</span>
+    <span>Consumer checks</span><span class="arr">→</span>
+    <span>EligibilityLedger</span><span class="arr">→</span>
+    <span class="hi">RESTRICTED</span><span class="arr">→</span>
+    <span>draw reverts</span>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>Why Attestcoin</h4>
+      <p>Only cryptographic inclusion + continuity lets CC3 accept an Ethereum fact without trusting a worker narrative. Removal test: without <code>0x0FD2</code>, no path to RESTRICTED.</p>
+    </div>
+    <div class="card">
+      <h4>Why Creditcoin</h4>
+      <p>The venue that must refuse the draw is where the proof verifies. Enforcement (<code>GatedCreditLine</code>) lives beside BlockProver on CC3.</p>
+    </div>
+  </div>
+
+  <h3>What is live today (verified)</h3>
+  <table class="kv">
+    <colgroup><col class="k" /><col class="v" /></colgroup>
+    <tr><td>Network</td><td>Creditcoin CC3 <strong>testnet</strong> · chainId <code>102031</code></td></tr>
+    <tr><td>Attestcoin chainKey</td><td><code>3</code> = Ethereum mainnet (not EVM chainId; Sepolia = <code>1</code>)</td></tr>
+    <tr><td>Public app</td><td>Vercel FE → Render worker → ETH / Proof Builder / CC3 (Mac-independent)</td></tr>
+    <tr><td>Demo outcome</td><td>Account <code>0xe05F…4A2A</code> = <code>RESTRICTED</code>; <code>draw</code> reverts <code>Restricted()</code> · selector <code>0xccc08913</code></td></tr>
+    <tr><td>Honesty</td><td>Featured account is already RESTRICTED from prior permissionless <code>submitProof</code>; eligible actor shows “before”</td></tr>
+  </table>
+
+  <div class="callout soft">No <code>setStatus</code> / <code>setRestricted</code>. Worker and UI are untrusted transport. Contracts are the eligibility authority.</div>
+
+  <!-- continued -->
+  <h2><span class="num">02</span> The problem &amp; the FreezeWire solution</h2>
+  <h3>The gap</h3>
+  <p>External compliance facts (Circle’s address blacklist on Ethereum) and on-chain credit decisions on Creditcoin live on different machines of consensus. Bridging them with APIs, databases, admin setters, or manually maintained status lists creates a single point of failure: compromise, downtime, or censorship of that operator yields wrong freezes or continued lending to flagged addresses.</p>
+  <h3>Desired property</h3>
+  <p>An address becomes <code>RESTRICTED</code> only when the underlying Ethereum fact has been cryptographically proven and Creditcoin contracts independently verify that proof — not when a backend says so.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>Oracle trap</h4>
+      <p><code>setRestricted(addr, bool) onlyOwner</code><br/>Key = compliance oracle. LP trusts server narrative.</p>
+    </div>
+    <div class="card">
+      <h4>FreezeWire</h4>
+      <p><code>submitProof(calldata)</code> permissionless<br/>Invalid proofs revert on-chain. No setter exists.</p>
+    </div>
+  </div>
+
+  <h3>Object of the gate</h3>
+  <p><strong>CEL freezes the instrument</strong> (e.g. issuer <code>Paused</code> → asset eligibility). <strong>FreezeWire freezes the counterparty</strong> after a proven Circle <code>Blacklisted</code> → address eligibility for new credit. Same Attestcoin spine class; different economic object. We do not claim overall superiority to CEL.</p>
+
+  <div class="callout">Attestcoin is not a label. It is the execution input.</div>
+
+  <!-- continued -->
+  <h2><span class="num">03</span> Why Attestcoin is load-bearing</h2>
+  <div class="arch">Ethereum event
+  → source tx + receipt
+  → Merkle inclusion + header continuity
+  → BlockProver 0x0FD2 verifyAndEmit
+  → FreezeWire consumer checks (status, emitter, topic, account, chainKey, window, txIndex)
+  → EligibilityLedger state transition
+  → GatedCreditLine enforcement</div>
+
+  <p><strong>What <code>0x0FD2</code> proves:</strong> inclusion of the submitted encoded transaction under an attested header, plus continuity toward the attested tip.</p>
+  <p><strong>What it does <em>not</em> prove:</strong> receipt success, Circle USDC emitter identity, event topic, or account. Those are FreezeWire consumer checks. Precompile success alone never writes Restricted.</p>
+
+  <div class="callout danger">Removal test: If Attestcoin / BlockProver <code>0x0FD2</code> is removed, FreezeWire cannot move an address to RESTRICTED — there is no owner setter, eligibility DB, or worker privilege that invents Circle’s blacklist.</div>
+
+  <!-- continued -->
+  <h2><span class="num">04</span> Live evidence — Ethereum → Attestcoin → CC3</h2>
+  <p class="tiny">Sources: <code>deployments/demo-evidence-public.json</code>, <code>demo-proof-public.json</code>, README, live API <code>/v1/status</code> (2026-09-13 re-check).</p>
+
+  <table class="kv">
+    <colgroup><col class="k" /><col class="v" /></colgroup>
+    <tr><td>ETH source tx</td><td><a class="url-label" href="https://etherscan.io/tx/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787">0xc9edfdbb…ff787</a> · Circle USDC <code>blacklist</code> → <code>Blacklisted</code></td></tr>
+    <tr><td>Block / txIndex</td><td><code>25,705,174</code> · recovered txIndex <code>18</code></td></tr>
+    <tr><td>Account B</td><td><code>0xe05F529f5284D75624eBa386CB716928c3b54A2A</code></td></tr>
+    <tr><td>Emitter (immutable)</td><td><code>0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48</code></td></tr>
+    <tr><td>Proof Builder</td><td>chainKey <code>3</code> · siblings <code>9</code> · continuity roots <code>27</code></td></tr>
+    <tr><td>CC3 submitProof</td><td><a class="url-label" href="https://creditcoin-testnet.blockscout.com/tx/0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45">0x07e30451…dfc45</a> · status success</td></tr>
+    <tr><td>statusOf(B)</td><td><code>RESTRICTED</code> (artifact + live <code>/v1/status</code> source=<code>chain</code>)</td></tr>
+    <tr><td>draw as B</td><td>reverts · signature <code>0xccc08913</code> = <code>Restricted()</code></td></tr>
+  </table>
+
+  <h3>Proof-to-enforcement timeline</h3>
+  <ol>
+    <li>Real Ethereum mainnet Circle USDC transaction exists (not Sepolia, not a mock blacklist).</li>
+    <li>Proof Builder returns Merkle + continuity for chainKey <code>3</code>, height <code>25705174</code>, txIndex <code>18</code>.</li>
+    <li>On-chain <code>verifyAndEmit</code> at BlockProver <code>0x…0FD2</code>.</li>
+    <li>Consumer: <code>receiptStatus == 1</code>; emitter == constructor-immutable USDC; topic0 ∈ {Blacklisted, UnBlacklisted}; account from <code>topics[1]</code>.</li>
+    <li>Replay key burned; ledger writes RESTRICTED.</li>
+    <li><code>GatedCreditLine.draw</code> as B reverts; repay / unused withdraw remain allowed.</li>
+  </ol>
+
+  <div class="callout soft">Demo honesty: B is already RESTRICTED from a prior permissionless submit. Actor A (<code>0x6b0745…cD52</code>) shows the eligible path. Default unset = ELIGIBLE is fail-open — not “proven clean.”</div>
+
+  <!-- continued -->
+  <h2><span class="num">05</span> Live contract deployments</h2>
+  <table class="contracts">
+    <colgroup><col class="c1" /><col class="c2" /><col class="c3" /></colgroup>
+    <thead>
+      <tr><th>Contract</th><th>Address</th><th>Role</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>BlacklistVerifier</td><td><a class="addr url-label" href="https://creditcoin-testnet.blockscout.com/address/0x6bf238291Bb8262918A1989831856DC6BC47D869">0x6bf23829…47D869</a></td><td>0x0FD2 + consumer checks · no eligibility storage</td></tr>
+      <tr><td>EligibilityLedger</td><td><a class="addr url-label" href="https://creditcoin-testnet.blockscout.com/address/0xde64d5037cA820D4aDFa703C4FaF5451be840C9d">0xde64d503…840C9d</a></td><td>Only eligibility writer · permissionless submitProof</td></tr>
+      <tr><td>GatedCreditLine</td><td><a class="addr url-label" href="https://creditcoin-testnet.blockscout.com/address/0xB04fFca20e0a992474E6AD501A061973dC9Ed340">0xB04fFca2…9Ed340</a></td><td>Reads statusOf · enforces draw/escrow gates</td></tr>
+      <tr><td>MockUSD</td><td><a class="addr url-label" href="https://creditcoin-testnet.blockscout.com/address/0x6943EB32EAb562791f095E91ee288627ADDdC5B3">0x6943EB32…DdC5B3</a></td><td>Demo ERC-20 on CC3 — <strong>not</strong> Circle USDC</td></tr>
+    </tbody>
+  </table>
+  <p class="tiny">Deploy block <code>5479278</code> · LTV <code>5000</code> bps · proof window <code>(0,0)</code> unbounded (disclosed testnet residual) · BlockProver <code>0x…0FD2</code>.</p>
+  <p><code>GatedCreditLine</code> does <strong>not</strong> call <code>0x0FD2</code>. No owner <code>setStatus</code> exists anywhere.</p>
+
+  <!-- continued -->
+  <h2><span class="num">06</span> Deployed public application</h2>
+  <div class="badge-row">
+    <span class="badge live">TRY LIVE DEMO</span>
+  </div>
+  <table class="kv">
+    <colgroup><col class="k" /><col class="v" /></colgroup>
+    <tr><td>Frontend</td><td><a class="url-label" href="https://frontend-bice-pi-49.vercel.app">frontend-bice-pi-49.vercel.app</a></td></tr>
+    <tr><td>Backend</td><td><a class="url-label" href="https://freezewire-backend.onrender.com/v1/health">freezewire-backend.onrender.com</a></td></tr>
+    <tr><td>GitHub</td><td><a class="url-label" href="https://github.com/CodewithJha/freeze-wire">github.com/CodewithJha/freeze-wire</a></td></tr>
+  </table>
+  <div class="arch">Browser → Vercel (frontend)
+         ↓ HTTPS
+      Render (stateless worker)
+         ↓
+   ┌─────┴──────┬────────────────┐
+   ↓            ↓                ↓
+Proof Builder  Ethereum RPC    CC3 RPC
+                    ↓
+              Circle USDC events</div>
+  <p><strong>Mac-independent:</strong> public path no longer requires localhost, a developer Mac, or Cloudflare Quick Tunnel. Verified: FE HTTP 200, <code>/v1/health</code> 200 with <code>cc3Rpc</code>/<code>ethRpc</code>/<code>proofBuilder.ok</code>, CORS allows the Vercel origin, <code>/v1/status/0xe05F…</code> returns <code>RESTRICTED</code> from chain.</p>
+
+  <h3>API surface (transport only)</h3>
+  <table class="api">
+    <colgroup><col class="m" /><col class="p" /><col class="n" /></colgroup>
+    <thead>
+      <tr><th>Method</th><th>Path</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/v1/health</code></td><td>Worker + RPC + Proof Builder health</td></tr>
+      <tr><td>GET</td><td><code>/v1/evidence/demo</code></td><td>Pinned public demo evidence</td></tr>
+      <tr><td>GET</td><td><code>/v1/prove/{tx}</code></td><td>Fetch Attestcoin proof bundle</td></tr>
+      <tr><td>GET</td><td><code>/v1/status/{address}</code></td><td>Read on-chain <code>statusOf</code></td></tr>
+      <tr><td>POST</td><td><code>/v1/relay</code></td><td>Without key → <code>404 RELAY_DISABLED</code> + <code>submitProof</code> calldata</td></tr>
+    </tbody>
+  </table>
+  <div class="callout soft">Relay intentionally disabled without <code>RELAY_PRIVATE_KEY</code> is a <strong>security property</strong>: the worker returns prepared calldata for wallet broadcast instead of holding broadcast privilege. Verified live against the demo tx.</div>
+
+  <div class="keep callout soft">Live UI: <a class="url-label" href="https://frontend-bice-pi-49.vercel.app">frontend-bice-pi-49.vercel.app</a> — dark institutional evidence console · accent <code>#D6FF3F</code>. Screenshot asset retained in <code>project-packaging/whitepaper/assets/frontend-hero.png</code>.</div>
+
+  <!-- continued -->
+  <h2><span class="num">07</span> End-to-end architecture</h2>
+  <div class="arch">USER / WALLET
+      │
+      ▼
+VERCEL FRONTEND  (untrusted UI)
+      │
+      ▼
+RENDER BACKEND   (untrusted transport · no setStatus)
+      ├──────────────► Proof Builder (Attestcoin)
+      ├──────────────► Ethereum (source facts)
+      └──────────────► Creditcoin CC3
+                            │
+                            ▼
+                   BlockProver 0x0FD2
+                            │
+                            ▼
+                   BlacklistVerifier
+                            │
+                            ▼
+                   EligibilityLedger  ← source of truth
+                            │
+                            ▼
+                   GatedCreditLine</div>
+  <div class="grid3">
+    <div class="card"><h4>Not authority</h4><p>Frontend, backend, relayer, caches, RPC until verified on-chain.</p></div>
+    <div class="card"><h4>Authority</h4><p>On-chain eligibility + explorers. Wallet controls broadcast.</p></div>
+    <div class="card"><h4>No DB oracle</h4><p>Stateless worker (ADR-0004). Eligibility is not a database row.</p></div>
+  </div>
+
+  <!-- continued -->
+  <h2><span class="num">08</span> Smart contract design</h2>
+  <p>Three-contract separation (ADR-0003) reduces attack surface and clarifies trust:</p>
+  <table class="threat3">
+    <colgroup><col class="a" /><col class="b" /><col class="c" /></colgroup>
+    <thead>
+      <tr><th>Contract</th><th>Owns</th><th>Does not</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>BlacklistVerifier</td><td>0x0FD2 call, decode, bind events</td><td>Store eligibility</td></tr>
+      <tr><td>EligibilityLedger</td><td>statusOf, processed replay map, submitProof</td><td>Call credit math; owner setRestricted</td></tr>
+      <tr><td>GatedCreditLine</td><td>deposit/draw/repay/withdraw/escrow gates</td><td>Contain Attestcoin verification</td></tr>
+    </tbody>
+  </table>
+  <p>Solidity <code>0.8.23</code>, Foundry, custom errors, constructor-immutable Circle USDC emitter (ADR-0016).</p>
+
+  <h3>5-stage verification spine</h3>
+  <ol>
+    <li><strong>Inclusion</strong> — <code>0x0FD2.verifyAndEmit</code></li>
+    <li><strong>Status</strong> — <code>receiptStatus == 1</code> or <code>SourceTxFailed</code></li>
+    <li><strong>Emitter</strong> — log.address == immutable Circle USDC</li>
+    <li><strong>Event</strong> — topic0 Blacklisted / UnBlacklisted</li>
+    <li><strong>Account</strong> — topics[1]; caller cannot redirect</li>
+  </ol>
+  <div class="callout">Backend ≠ compliance authority.</div>
+
+  <!-- continued -->
+  <h2><span class="num">09</span> Security model &amp; consumer checks</h2>
+  <p>After precompile success, FreezeWire still requires: receipt status, immutable emitter, event topic, account topic, expected chainKey, height window, Merkle-recovered txIndex, ordering, and replay. Failed verify / decode / status≠1 does not create Restricted.</p>
+  <div class="callout soft">BlockProver proves inclusion/continuity. Consumer validates receipt success and application semantics. This distinction is load-bearing for Attestcoin-depth scoring.</div>
+
+  <h3>Compact attack matrix (from SECURITY_EVIDENCE)</h3>
+  <table class="threat3">
+    <colgroup><col class="a" /><col class="b" /><col class="c" /></colgroup>
+    <thead>
+      <tr><th>Threat</th><th>Defense</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Impostor emitter</td><td>Constructor-immutable USDC</td><td>No bind</td></tr>
+      <tr><td>Wrong topic / Pause decoy</td><td>topic0 filter</td><td>Ignored</td></tr>
+      <tr><td>Failed receipt</td><td>status==1</td><td>SourceTxFailed</td></tr>
+      <tr><td>Wrong chainKey</td><td>expected==3</td><td>WrongChainKey</td></tr>
+      <tr><td>Forged caller txIndex</td><td>recover from Merkle isLeft</td><td>Ignored</td></tr>
+      <tr><td>Bad Merkle / continuity</td><td>0x0FD2</td><td>ProofRejected</td></tr>
+      <tr><td>Replay</td><td>processed[key]</td><td>QueryAlreadyProcessed</td></tr>
+      <tr><td>Backend invents Restricted</td><td>No setter API</td><td>404 / impossible</td></tr>
+      <tr><td>Restricted draw</td><td>GatedCreditLine</td><td>Restricted()</td></tr>
+    </tbody>
+  </table>
+
+  <!-- continued -->
+  <h2><span class="num">10</span> Replay protection · ADR-0017 Model A</h2>
+  <div class="arch">key = keccak256(abi.encodePacked(chainKey, height, recoveredTxIndex))</div>
+  <ul>
+    <li>Caller-supplied txIndex is informational only; on-chain index is recovered from Merkle path bits (<code>TxIndex.sol</code>).</li>
+    <li><strong>Model A:</strong> after successful native verify <em>and</em> successful receipt scan (<code>status==1</code>), mark <code>processed[key]=true</code>. If no canonical USDC Blacklisted/UnBlacklisted log → emit <code>ProcessedWithoutFact</code> and <strong>return</strong> (do not revert). Eligibility unchanged. Retry → <code>QueryAlreadyProcessed</code>.</li>
+    <li>Do <strong>not</strong> mark replay if verify failed, window/chainKey failed, decode failed, or <code>receiptStatus != 1</code>.</li>
+    <li>Stale observations (older than account <code>lastPos</code>) are skipped, not whole-tx reverts.</li>
+  </ul>
+  <p class="tiny">Rationale: EVM reverts undo storage; <code>processed=true; revert NoMatchingEvent</code> cannot burn the key. Emitter is constructor-immutable, so Model B retries are useless gas.</p>
+
+  <!-- continued -->
+  <h2><span class="num">11</span> Decoder, backend, frontend</h2>
+  <h3>Attestcoin decoder</h3>
+  <p>FreezeWire vendors Gluwa <code>EvmV1Decoder</code> in-process. It walks the <strong>original</strong> log order (preserving <code>logIndex</code> for monotonic ordering), keeps only immutable-USDC logs with Blacklisted/UnBlacklisted topic0, and binds the indexed account from <code>topics[1]</code>. Decoy Transfer/Pause logs in the same receipt are ignored without failing the tx when a later match exists.</p>
+
+  <h3>Backend (Render)</h3>
+  <p>Node.js ≥20 · TypeScript · viem · zod · <code>@gluwa/usc-sdk</code>. Scripts: <code>npm ci</code> · <code>npm run build</code> · <code>npm start</code> · <code>npm test</code>. Stateless discovery + proof fetch + optional relay. Error sanitization, CORS, body-size limits, in-memory rate-limit pruning, bounded retries. <strong>Not</strong> the compliance authority.</p>
+
+  <h3>Frontend (Vercel)</h3>
+  <p>React 19 · Vite · TypeScript · Tailwind CSS 4 · viem · Three.js / React Three Fiber. Story spine: HOOK → EVENT → PROOF → CREDITCOIN → ACCESS. Commit state machine: PREPARED → WALLET SIGNATURE → BROADCAST → RECEIPT CONFIRMED → COMMITTED. UI does not claim success before chain confirmation; <code>RELAY_DISABLED</code> surfaces as NOT BROADCAST with calldata. Explicit LIVE / NOT_DEPLOYED / UNAVAILABLE / SIMULATION modes — production deploy does not enable simulation as the default path.</p>
+
+  <!-- continued -->
+  <h2><span class="num">12</span> Credit access enforcement</h2>
+  <div class="grid2">
+    <div class="card">
+      <h4>Account B · Restricted</h4>
+      <p><code>0xe05F…4A2A</code><br/>statusOf = RESTRICTED<br/>draw / protectedTransfer / escrow lock|release → revert<br/>repay / unused withdraw / deposit → allowed</p>
+    </div>
+    <div class="card">
+      <h4>Account A · Eligible demo</h4>
+      <p><code>0x6b0745…cD52</code><br/>Documented mint → approve → deposit → draw → repay → withdraw txs in public evidence JSON (CC3 testnet).</p>
+    </div>
+  </div>
+  <div class="callout">The restriction is enforced on-chain, not rendered by the UI.</div>
+
+  <!-- continued -->
+  <h2><span class="num">13</span> Testing &amp; verification</h2>
+  <p class="tiny">Counts verified locally 2026-09-13 via <code>forge test</code>, <code>backend npm test</code>, <code>frontend npm test</code>, <code>frontend npm run build</code>. Do not use older draft “44/5” figures.</p>
+  <table class="suite">
+    <colgroup><col class="s" /><col class="r" /><col class="c" /></colgroup>
+    <thead>
+      <tr><th>Suite</th><th>Result</th><th>Command</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Foundry</td><td><strong>95 passed</strong>, 0 failed, <strong>1 skipped</strong> (96 total; skip = optional live Attestcoin)</td><td><code>forge test</code></td></tr>
+      <tr><td>Backend</td><td><strong>46 passed</strong>, 0 failed</td><td><code>cd backend &amp;&amp; npm test</code></td></tr>
+      <tr><td>Frontend Vitest</td><td><strong>17 passed</strong>, 0 failed</td><td><code>cd frontend &amp;&amp; npm test</code></td></tr>
+      <tr><td>Frontend build</td><td>PASS</td><td><code>cd frontend &amp;&amp; npm run build</code></td></tr>
+    </tbody>
+  </table>
+  <p>Coverage includes adversarial receipts, emitter/topic/status/window/chainKey, txIndex recovery, replay, Model A no-match burn, gated finance T-FIN-*, API no-setter / RELAY_DISABLED, honesty UI states.</p>
+
+  <!-- continued -->
+  <h2><span class="num">14</span> Threat &amp; trust model</h2>
+  <div class="grid2">
+    <div class="card">
+      <h4>Trusted</h4>
+      <p>Ethereum consensus · Attestcoin/BlockProver · Creditcoin consensus · immutable Circle USDC address · deployed contract logic</p>
+    </div>
+    <div class="card">
+      <h4>Untrusted</h4>
+      <p>Frontend · backend · relayer · user input · caches · RPC responses until verified on-chain</p>
+    </div>
+  </div>
+  <table class="threat3">
+    <colgroup><col class="a" /><col class="b" /><col class="c" /></colgroup>
+    <thead>
+      <tr><th>Threat</th><th>Attack</th><th>Stopped by</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Fake proof</td><td>Junk Merkle/continuity</td><td>0x0FD2</td></tr>
+      <tr><td>Malicious backend</td><td>Lie about blacklist</td><td>No setter; on-chain checks</td></tr>
+      <tr><td>Malicious UI</td><td>False “committed”</td><td>Honesty states + explorers</td></tr>
+      <tr><td>Leaked relay key</td><td>Gas grief / spam submit</td><td>Still cannot forge valid Restricted without proof</td></tr>
+      <tr><td>Unauthorized draw</td><td>Restricted borrower</td><td>GatedCreditLine</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">No setStatus(). No centralized compliance oracle.</div>
+
+  <!-- continued -->
+  <h2><span class="num">15</span> Why not a centralized oracle?</h2>
+  <div class="grid2">
+    <div class="card"><h4>Centralized</h4><p>Backend says blacklisted → contract trusts backend.</p></div>
+    <div class="card"><h4>FreezeWire</h4><p>Ethereum event → proof → consumer checks → state → credit gate.</p></div>
+  </div>
+  <p>There is intentionally no <code>setStatus(address, RESTRICTED)</code>. A compromised worker cannot invent Restricted; an honest worker cannot skip <code>0x0FD2</code>.</p>
+
+  <h2><span class="num">16</span> Product direction &amp; differentiation</h2>
+  <p><strong>Product concept:</strong> external compliance facts become programmable credit constraints.</p>
+  <p class="tiny">Framed as potential extensions — not existing customers or revenue.</p>
+  <ul>
+    <li>Compliance-aware CTC lending / stablecoin credit lines</li>
+    <li>Counterparty risk controls for institutional venues</li>
+    <li>Automated inheritance of issuer control-plane events (blacklist / restore)</li>
+  </ul>
+  <div class="callout soft">CEL freezes the instrument; FreezeWire freezes the counterparty — only after Attestcoin proves the Ethereum fact.</div>
+  <table class="threat3">
+    <colgroup><col class="a" /><col class="b" /><col class="c" /></colgroup>
+    <thead>
+      <tr><th>Peer class</th><th>Their object</th><th>FreezeWire difference</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CEL</td><td>Instrument pause</td><td>Address blacklist → credit gate</td></tr>
+      <tr><td>Corolary</td><td>Lending history / score</td><td>Compliance flag, not reputation</td></tr>
+      <tr><td>Toxa / Deadswitch</td><td>Lock / collateral prove</td><td>Inherit Circle control-plane; deny credit</td></tr>
+    </tbody>
+  </table>
+  <p>Not merely another lending app, oracle, bridge, blacklist UI, or Attestcoin tutorial — the combination is: real mainnet compliance event + proof + consumer semantics + counterparty eligibility + enforceable CTC credit restriction + permissionless submit.</p>
+
+  <!-- continued -->
+  <h2><span class="num">17</span> Innovation (precise)</h2>
+  <ol>
+    <li>Real Ethereum Circle USDC compliance event</li>
+    <li>Attestcoin inclusion + continuity</li>
+    <li>Consumer-side semantic validation</li>
+    <li>Counterparty eligibility state</li>
+    <li>Credit enforcement with never-trap exits</li>
+    <li>Permissionless proof submission</li>
+    <li>Wallet-controlled execution when relay is disabled</li>
+    <li>No centralized compliance oracle</li>
+  </ol>
+
+  <!-- continued -->
+  <h2><span class="num">18</span> Reproducibility</h2>
+  <p><strong>Prerequisites:</strong> Node.js ≥20, npm, Foundry (<code>forge</code>/<code>cast</code>/<code>anvil</code>), Git, EVM wallet, CC3 testnet CTC for broadcasts, Ethereum + Proof Builder HTTPS access.</p>
+  <div class="arch shell">git clone https://github.com/CodewithJha/freeze-wire.git
+cd freeze-wire
+cp .env.example .env
+# fill public RPCs / addresses only — never commit secrets
+# optional: frontend/.env.local via documented sync scripts
+
+# Contracts
+forge fmt --check &amp;&amp; forge build &amp;&amp; forge test
+
+# Backend
+cd backend &amp;&amp; npm ci &amp;&amp; npm test &amp;&amp; npm run build &amp;&amp; npm start
+
+# Frontend
+cd frontend &amp;&amp; npm ci &amp;&amp; npm test &amp;&amp; npm run build &amp;&amp; npm run dev</div>
+  <p>Prefer the <strong>live</strong> Vercel + Render deployment for verification. Local worker is for development. Commands requiring private keys / funded wallets are optional and must use operator-held secrets — none appear in this document.</p>
+  <p class="tiny">Optional live Proof Builder tests: <code>LIVE_ATTESTCOIN=1 npm test</code> in <code>backend/</code>.</p>
+
+  <!-- continued -->
+  <h2><span class="num">19</span> Repository structure</h2>
+  <div class="arch">freeze-wire/
+├── contracts/          # Foundry · BlacklistVerifier, EligibilityLedger, GatedCreditLine
+├── backend/            # Stateless TypeScript worker (Render)
+├── frontend/           # React 19 demo (Vercel)
+├── deployments/        # *-public.json evidence (registries may be gitignored)
+├── docs/               # Specs, ADRs, Attestcoin, security, demo
+├── config/             # Network templates
+├── scripts/            # Ops helpers
+├── project-packaging/  # Whitepaper + project packaging docs
+├── foundry.toml
+└── README.md</div>
+
+  <!-- continued -->
+  <h2><span class="num">20</span> Deployment architecture &amp; live verification</h2>
+  <table class="kv">
+    <colgroup><col class="k" /><col class="v" /></colgroup>
+    <tr><td>Frontend host</td><td>Vercel · <a class="url-label" href="https://frontend-bice-pi-49.vercel.app">frontend-bice-pi-49.vercel.app</a></td></tr>
+    <tr><td>Backend host</td><td>Render · <a class="url-label" href="https://freezewire-backend.onrender.com/v1/health">freezewire-backend.onrender.com</a></td></tr>
+    <tr><td>External</td><td>Ethereum mainnet · Proof Builder · Creditcoin CC3 testnet</td></tr>
+    <tr><td>Not required</td><td>Developer Mac · localhost · Cloudflare Quick Tunnel</td></tr>
+  </table>
+
+  <h3>Verified live checklist (2026-09-13)</h3>
+  <table class="check2">
+    <colgroup><col class="a" /><col class="b" /></colgroup>
+    <thead>
+      <tr><th>Check</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Frontend reachable</td><td class="check">✓ HTTP 200</td></tr>
+      <tr><td>Backend <code>/v1/health</code></td><td class="check">✓ 200 · cc3Rpc/ethRpc/proofBuilder ok · chainId 102031 · chainKey 3</td></tr>
+      <tr><td>CORS for Vercel origin</td><td class="check">✓ allow-origin matches FE</td></tr>
+      <tr><td>ETH source tx</td><td class="check">✓ <a class="url-label" href="https://etherscan.io/tx/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787">Etherscan</a> 200</td></tr>
+      <tr><td>submitProof tx</td><td class="check">✓ <a class="url-label" href="https://creditcoin-testnet.blockscout.com/tx/0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45">Blockscout</a> 200</td></tr>
+      <tr><td>Contract addresses on explorer</td><td class="check">✓ all four 200</td></tr>
+      <tr><td>statusOf(B) via API</td><td class="check">✓ RESTRICTED · source=chain</td></tr>
+      <tr><td>POST /v1/relay without key</td><td class="check">✓ RELAY_DISABLED + submitProof calldata</td></tr>
+      <tr><td>Production FE simulation default</td><td class="check">✓ not the public path (opt-in env only)</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">Live on Creditcoin CC3 Testnet.</div>
+
+  <!-- continued -->
+  <h2><span class="num">21</span> Known limitations</h2>
+  <ul>
+    <li><strong>CC3 testnet only</strong> — not Creditcoin mainnet production; no audit claim.</li>
+    <li><strong>Proof window (0,0)</strong> unbounded on live deploy — disclosed residual; production should bound freshness.</li>
+    <li>Owner can still retune <code>setExpectedChainKey</code> / <code>setWindow</code> (ops residual; not emitter swap; not Attestcoin bypass).</li>
+    <li>MockUSD is demo collateral — not Circle reserves on CTC.</li>
+    <li>Wallet path when relay disabled; in-memory rate limits; Render cold starts; limited FE E2E vs Foundry depth.</li>
+    <li>Demo account already RESTRICTED — two-account honesty (documented).</li>
+  </ul>
+  <h2><span class="num">22</span> Roadmap (not shipped)</h2>
+  <p class="tiny"><strong>Now:</strong> CC3 testnet + Vercel/Render. <strong>Next:</strong> bounded windows / monitoring. <strong>Later:</strong> more facts/chains. <strong>Out of scope:</strong> eligibility DB, writability-as-authority, rotatable emitter.</p>
+
+  <!-- continued -->
+  <h2><span class="num">23</span> Summary</h2>
+  <p>FreezeWire is an evidence-backed Attestcoin application on Creditcoin CC3 testnet that turns a <strong>real Ethereum mainnet Circle USDC blacklist</strong> into an on-chain <strong>counterparty eligibility</strong> state and a real <strong>credit draw rejection</strong> — without a backend compliance oracle.</p>
+  <ul>
+    <li>Meaningful Attestcoin depth: <code>0x0FD2</code> vs consumer checks, removal test, Model A replay</li>
+    <li>Live CC3 deployment with public addresses and explorer txs</li>
+    <li>Actual state transition to RESTRICTED + <code>Restricted()</code> enforcement</li>
+    <li>Strong trust boundaries: no setStatus; RELAY_DISABLED + calldata</li>
+    <li>Mac-independent public stack: Vercel → Render → ETH / PB / CC3</li>
+    <li>Verified tests: Foundry 95/1 skip · backend 46 · frontend 17 · build PASS</li>
+    <li>Clear product differentiation vs instrument-freeze (CEL) and scoring (Corolary)</li>
+    <li>Honest limitations disclosed (testnet, unbounded window, already-RESTRICTED demo)</li>
+  </ul>
+  <div class="callout">Proof verified → state changed → credit gate enforced.</div>
+  <div class="callout soft">If Attestcoin is removed, the compliance transition disappears.</div>
+
+  <!-- continued -->
+  <h2><span class="num">24</span> Links</h2>
+  <table class="kv">
+    <colgroup><col class="k" /><col class="v" /></colgroup>
+    <tr><td>GitHub</td><td><a class="url-label" href="https://github.com/CodewithJha/freeze-wire">github.com/CodewithJha/freeze-wire</a></td></tr>
+    <tr><td>Frontend</td><td><a class="url-label" href="https://frontend-bice-pi-49.vercel.app">frontend-bice-pi-49.vercel.app</a></td></tr>
+    <tr><td>Backend health</td><td><a class="url-label" href="https://freezewire-backend.onrender.com/v1/health">/v1/health</a></td></tr>
+    <tr><td>ETH source tx</td><td><a class="url-label" href="https://etherscan.io/tx/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787">Etherscan 0xc9ed…f787</a></td></tr>
+    <tr><td>CC3 submitProof</td><td><a class="url-label" href="https://creditcoin-testnet.blockscout.com/tx/0x07e30451fb38776aa972603e94aeb8f779f182a5047a371195df2d598a4dfc45">Blockscout 0x07e3…fc45</a></td></tr>
+    <tr><td>Attestcoin summary</td><td><a class="url-label" href="https://github.com/CodewithJha/freeze-wire/blob/master/docs/ATTESTCOIN_INTEGRATION_SUMMARY.md">docs/ATTESTCOIN_INTEGRATION_SUMMARY.md</a></td></tr>
+    <tr><td>Public evidence</td><td><a class="url-label" href="https://github.com/CodewithJha/freeze-wire/blob/master/deployments/demo-evidence-public.json">demo-evidence-public.json</a></td></tr>
+    <tr><td>Proof Builder health</td><td><a class="url-label" href="https://proof-gen-api.cc3-testnet.creditcoin.network/api/v1/health">proof-gen-api.cc3-testnet…/health</a></td></tr>
+  </table>
+
+  <p class="tiny" style="margin-top:10mm">Document generated from repository source of truth. No secrets. No mainnet-production claims. Accent #D6FF3F matches the public product UI.</p>
+  <div class="callout">“The backend never told Creditcoin the address was blacklisted. The Attestcoin proof did.”</div>
+</section>
+
+</div>
+</body>
+</html>

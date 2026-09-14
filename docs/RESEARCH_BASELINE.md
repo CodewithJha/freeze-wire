@@ -1,6 +1,6 @@
 # Research baseline
 
-**Fetched:** 2026-09-10. Reuses prior gates (competitive intel, CEL/Corolary/Deadswitch/Toxa/Attestable/ChargeProof READMEs, stopped Gate 5 implementation notes). This pass **re-verified Attestcoin, Creditcoin, Credal, Circle, and the demo source transaction** from official docs and chain RPC. It did **not** repeat a full peer-project crawl.
+**Fetched:** 2026-09-10. Reuses earlier peer research (CEL/Corolary/Deadswitch/Toxa/Attestable/ChargeProof READMEs, notes from the stopped abandoned implementation). This pass **re-verified Attestcoin, Creditcoin, Credal, Circle, and the demo source transaction** from official docs and chain RPC. It did **not** repeat a full peer-project crawl.
 
 Labels: **FACT** / **ASSUMPTION** / **INFERENCE** / **UNVERIFIED** / **BLOCKER**. Never promote assumption to fact.
 
@@ -45,7 +45,7 @@ Gluwa SDK README cites `CREDITCOIN_PROOF_BUILDER_URL=https://prover.cc3-testnet.
 | Ethereum **Sepolia** chainKey | **1** |
 | Ethereum **mainnet** chainKey | **3** |
 
-## Attestcoin — CC3 mainnet (FACT; out of demo deploy scope)
+## Attestcoin — CC3 mainnet (FACT; out of current deploy scope)
 
 | Item | Value |
 |---|---|
@@ -71,7 +71,7 @@ Errors: 400 invalid, 404 not found, 422 `BlockNotReady` / `UnsupportedBlockForma
 
 Proof object (`SingleContinuityResponse`): `chainKey`, `headerNumber`, `txIndex`, `continuityProof{lowerEndpointDigest, roots[]}`, `merkleProof{root, siblings[{hash, isLeft}]}`, `txBytes`, `txHash`, `cached`, `generatedAt`.
 
-**UNVERIFIED this pass:** whether `/api/v1/proof-by-tx/3/{demoTx}` still returns a bundle (prior Gate 5 run reported yes; not re-fetched here to avoid treating cache as a spec). Re-check in Phase 3.
+**UNVERIFIED this pass:** whether `/api/v1/proof-by-tx/3/{demoTx}` still returns a bundle (an earlier verification pass reported yes; not re-fetched here to avoid treating cache as a spec). Re-check in Phase 3.
 
 **FACT:** `GET /health` (no `/api/v1`) returned HTTP 404 this pass. Use `/api/v1/health`.
 
@@ -148,9 +148,9 @@ Official examples compute `txIndex` from the Merkle sibling path, then key `kecc
 
 Batch: protocol supports up to **10** queries sharing one continuity proof. MVP uses **single-tx** proofs. Batch is future/optional (gas), not a demo requirement.
 
-## What prior gates established (reused, not re-crawled)
+## What prior research established (reused, not re-crawled)
 
-Project: open-source Creditcoin project; Attestcoin mandatory; deadline 13 Sep 2026 23:59 ET; ~$15k overall. Completeness bar includes ChargeProof, CEL, Deadswitch, ThirdCheck-class consumer checks.
+Product context: Attestcoin-backed consumer checks are mandatory for FreezeWire. Completeness bar includes ChargeProof, CEL, Deadswitch, ThirdCheck-class consumer checks.
 
 | Project | Object (from their READMEs, 2026-09-10) |
 |---|---|
@@ -166,6 +166,6 @@ See `COMPETITIVE_POSITIONING.md`.
 
 ## Intentionally not in this baseline
 
-- Full packaging peer-project recrawl
+- Full peer-project recrawl of every related listing
 - Discord (login-walled)
 - Implementing or copying the stopped `freezewire/` contracts

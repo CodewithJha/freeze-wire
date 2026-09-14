@@ -1,6 +1,6 @@
 # DEMO_RUNBOOK.md
 
-Operator checklist for the live judge demo. Narrative/timing: [`DEMO_SPECIFICATION.md`](./DEMO_SPECIFICATION.md).
+Operator checklist for the live demo. Narrative/timing: [`DEMO_SPECIFICATION.md`](./DEMO_SPECIFICATION.md).
 
 **Hard rule:** Do **not** invent a live ELIGIBLE→RESTRICTED transition on `0xe05F529f5284D75624eBa386CB716928c3b54A2A`.
 
@@ -93,7 +93,7 @@ Pinned hashes: see `DEMO_SPECIFICATION.md` and `deployments/*-public.json`.
 
 - Hero TRACE / LOAD DEMO = **B evidence only**
 - Do **not** use UI as A’s status story
-- Sequence 01–04: what each checkmark means; skip re-commit of 03 if replay would confuse judges
+- Sequence 01–04: what each checkmark means; skip re-commit of 03 if replay would confuse the audience
 
 ---
 
@@ -119,7 +119,7 @@ Pinned hashes: see `DEMO_SPECIFICATION.md` and `deployments/*-public.json`.
 
 ---
 
-## 9. Judge Q&A
+## 9. Demo Q&A
 
 See `COMPETITIVE_POSITIONING.md` + DEMO_SPEC Q&A. Short answer to “Already Restricted — fake?”: prior permissionless `submitProof` on public Blockscout; architecture forbids inventing that without Attestcoin + consumer checks.
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" width="480" height="480" role="img" aria-label="FreezeWire">
+  <title>FreezeWire</title>
+  <rect width="480" height="480" fill="#0a0c0b"/>
+  <g fill="none" stroke="#D6FF3F" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- Ice shard -->
+    <path d="M240 64 L356 240 L240 416 L124 240 Z" stroke-width="16"/>
+    <!-- Frost facets (inner diamond + spine) -->
+    <path d="M240 164 L302 240 L240 316 L178 240 Z" stroke-width="7"/>
+    <path d="M240 112 L240 368" stroke-width="7"/>
+    <!-- Wire through the freeze: gate jog = compliance checkpoint -->
+    <path d="M64 240 H156 L196 196 H284 L324 240 H416" stroke-width="14"/>
+  </g>
+  <g fill="#D6FF3F">
+    <circle cx="64" cy="240" r="13"/>
+    <circle cx="416" cy="240" r="13"/>
+    <circle cx="196" cy="196" r="9"/>
+    <circle cx="284" cy="196" r="9"/>
+  </g>
+  <!-- Freeze lock at crossing: ink punch so wire reads cleanly -->
+  <circle cx="240" cy="240" r="20" fill="#0a0c0b"/>
+  <circle cx="240" cy="240" r="18" fill="none" stroke="#D6FF3F" stroke-width="10"/>
+  <circle cx="240" cy="240" r="6" fill="#D6FF3F"/>
+</svg>

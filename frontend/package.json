@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "FreezeWire Phase 5 demo workspace — evidence → proof → Creditcoin access",
+  "description": "FreezeWire demo UI — evidence → proof → Creditcoin access",
   "engines": {
     "node": ">=20"
   },

@@ -93,7 +93,7 @@ Pass through Proof Builder `code`/`retriable` when present.
 | Dependencies | `RELAY_PRIVATE_KEY`, `LEDGER_ADDRESS`, CC3 RPC |
 | Requirements | FR-024, SEC-001 |
 
-If `RELAY_PRIVATE_KEY` unset: **404 `RELAY_DISABLED`** and return `{ "submitProof": { "to", "data" } }` so the UI wallet can send (preferred for wallet UX).
+If `RELAY_PRIVATE_KEY` unset: **404 `RELAY_DISABLED`** and return `{ "submitProof": { "to", "data" } }` so the UI wallet can send (preferred for transparent demos).
 
 ---
 

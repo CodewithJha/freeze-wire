@@ -52,9 +52,9 @@ Requirement → Design (architecture / tech / contract / API) → Implementation
 | NFR-003 | Every external boundary returns a typed error (RPC, proof, revert, wallet). No silent swallow. |
 | NFR-004 | Secrets never committed; `.env.example` placeholders only. |
 | NFR-005 | Structured logs include `sourceTx`, `chainKey`, `height`, `txIndex`, `ctcTx` when known. Never keys or mnemonics. |
-| NFR-006 | Demo target: CC3 testnet only. |
+| NFR-006 | Public deploy target: CC3 testnet only. |
 | NFR-007 | Local Foundry tests do not require live Proof Builder (precompile mocked). Live verification is a separate integration test. |
-| NFR-008 | Demo path completes in ~150 seconds of presentation time (not including attestation wait if already attested). |
+| NFR-008 | Core demo path is operable end-to-end in a short live walkthrough (excluding attestation wait if already attested). |
 | NFR-009 | Solidity `^0.8.23` to match official ASC examples unless an ADR changes it. |
 | NFR-010 | Custom errors preferred over string reverts. |
 | NFR-011 | Gas: MVP submits **one** proof per source tx; avoid >500 KB source txs (protocol limit). Prefer proofs once the height is attested. |

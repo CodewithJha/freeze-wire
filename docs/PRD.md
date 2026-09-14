@@ -1,8 +1,6 @@
 # Product Requirements Document — FreezeWire
 
-**Project:** open-source Creditcoin project  
-**Deadline:** 13 September 2026, 23:59 ET  
-**Status:** Gate 5A — product freeze for implementation (mentor may still override)
+**Status:** Product freeze for implementation (specs under `docs/` are source of truth)
 
 ---
 
@@ -21,13 +19,13 @@ This is a different problem from asset pause (CEL) and from solvency/reputation 
 
 ## Target user
 
-Primary (demo / CEIP story): a **Creditcoin credit or escrow operator** who must refuse **new** exposure to an address that the canonical USDC issuer has blacklisted on Ethereum, without appointing FreezeWire’s servers as an oracle.
+Primary: a **Creditcoin credit or escrow operator** who must refuse **new** exposure to an address that the canonical USDC issuer has blacklisted on Ethereum, without appointing FreezeWire’s servers as an oracle.
 
 Secondary (demo personas):
 
 - **Lender / protocol** — wants draws and escrow release to fail once the flag is proven
 - **Borrower** — must still be able to repay and withdraw unused own funds (no hostage)
-- **Judge / auditor** — must independently re-read Etherscan + Blockscout + precompile, not our database
+- **Auditor** — must independently re-read Etherscan + Blockscout + precompile, not our database
 
 ## Current workflow
 
@@ -38,7 +36,7 @@ Secondary (demo personas):
 
 ## Pain point
 
-The destination chain has **Attestcoin readability** — cryptographic inclusion of the source transaction — but typical CTC credit apps still treat compliance as an **off-chain opinion**. That fails the Attestcoin bar (Attestcoin must be load-bearing) and fails a real auditor: “who told Creditcoin this address was blacklisted?”
+The destination chain has **Attestcoin readability** — cryptographic inclusion of the source transaction — but typical CTC credit apps still treat compliance as an **off-chain opinion**. That fails the product bar (Attestcoin must be load-bearing) and fails a real auditor: “who told Creditcoin this address was blacklisted?”
 
 A freeze that also locks repayment converts compliance into a hostage situation. Selective enforcement is part of the product, not a nicety.
 
@@ -58,7 +56,7 @@ The off-chain worker only **discovers** and **relays**. `submitProof` is permiss
 
 CTC dollars used as credit/escrow can **inherit Circle’s address-level flag** with an explorer-verifiable proof, without FreezeWire’s backend as the authority.
 
-What becomes possible: a judge can open a real Ethereum `blacklist` transaction, see the proof verify on Creditcoin, see the ledger flip, and see a draw revert — and the sentence is true:
+What becomes possible: an auditor can open a real Ethereum `blacklist` transaction, see the proof verify on Creditcoin, see the ledger flip, and see a draw revert — and the sentence is true:
 
 > The backend never told Creditcoin the address was blacklisted. The Attestcoin proof did.
 
@@ -84,7 +82,7 @@ Normative IDs: `docs/REQUIREMENTS.md`.
 - Verify Attestcoin proofs on-chain; reject unverified bytes.
 - Bind only canonical USDC `Blacklisted` / `UnBlacklisted` logs.
 - Key state by **address**, not by asset.
-- Permissionless submission; no `setRestricted` owner path.
+- Permissionless `submitProof`; no `setRestricted` owner path.
 - Selective financial enforcement (never trap exits).
 - Demo UI that shows the full proof chain with a real mainnet event.
 - Worker: discover / prove / relay / health — no authorization.
@@ -103,15 +101,14 @@ Normative IDs: `docs/REQUIREMENTS.md`.
 
 | Constraint | Detail |
 |---|---|
-| Deadline | 13 Sep 2026 23:59 ET |
 | Attestcoin | Readability available on CC3 testnet. Writability **not** in scope (docs: still in audit). |
 | Environment | CC3 testnet chain id **102031**. Public RPC. |
 | Infra | Hosted Proof Builder (liveness). Public Ethereum RPC (liveness). No Credal dependency. |
-| Wallets | Mentor must provide a **funded** CC3 EVM key for deploy/relay. Faucet is Discord `#token-faucet`. |
-| Deployment | Demo deploys **testnet only**. Mainnet chainKeys differ (ETH mainnet is chainKey 1 there). |
+| Wallets | A **funded** CC3 EVM key is required for deploy/relay. Faucet is Discord `#token-faucet`. |
+| Deployment | Current public deploy is **testnet only**. Mainnet chainKeys differ (ETH mainnet is chainKey 1 there). |
 | Evidence | Demo must use a **real** Ethereum mainnet USDC `Blacklisted`, not a mock event we emit. |
 | Workspace | Standalone repo at the FreezeWire repository root. Kaggriculture is a separate project; do not modify it. |
-| Time | ~3 days after this documentation gate. Scope is MVP, not a production compliance engine. |
+| Scope | MVP, not a production compliance engine. |
 
 ## Success criteria (measurable)
 
@@ -119,7 +116,7 @@ Normative IDs: `docs/REQUIREMENTS.md`.
 2. Live CC3: `0x0FD2` accepts a Proof Builder bundle for the demo source tx (**or** a documented replacement if that bundle is no longer served).
 3. After `submitProof`, Blockscout shows ledger state `RESTRICTED` for `0xe05F…4A2A` (or the bound account) **without** an owner setter.
 4. Restricted `draw` reverts; `repay` succeeds on the same account.
-5. A 150s demo script in `DEMO_SPECIFICATION.md` can be executed against explorers.
+5. A short live demo script in `DEMO_SPECIFICATION.md` can be executed against explorers.
 6. Forgery cases (wrong emitter, wrong event, failed receipt, replay, wrong chainKey) revert in tests.
 
 ## Out of scope (MVP)
@@ -129,7 +126,7 @@ Normative IDs: `docs/REQUIREMENTS.md`.
 - Claiming MockUSD is USDC or a claim on Circle reserves
 - Full KYC/AML, travel rule, or regulator integrations
 - Multi-issuer registry UI (demo is USDC only; a later issuer requires a new deployment or future ADR, not owner rotation of `expectedEmitter`)
-- Unblacklisting **in the 150s demo** (must exist in tests and spec; optional in live demo if time)
+- Unblacklisting **in the live demo walkthrough** (must exist in tests and spec; optional in live demo when time is short)
 - Production mainnet deploy
 - Credal
 - A privileged compliance officer role that writes eligibility

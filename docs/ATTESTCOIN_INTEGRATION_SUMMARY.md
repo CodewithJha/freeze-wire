@@ -1,9 +1,8 @@
 # Attestcoin Integration Summary
 
-**Product:** FreezeWire  
-**Project:** open-source Creditcoin project  
-**Audience:** reviewers (submission-ready)  
-**Normative detail:** [`ATTESTCOIN_INTEGRATION.md`](./ATTESTCOIN_INTEGRATION.md)  
+**Product:** FreezeWire
+**Audience:** Integrators and auditors
+**Normative detail:** [`ATTESTCOIN_INTEGRATION.md`](./ATTESTCOIN_INTEGRATION.md)
 **Live public evidence:** committed `deployments/demo-evidence-public.json` + `deployments/demo-proof-public.json` (public fields only). Local `deployments/cc3-testnet.json` may exist for ops and stays gitignored.
 
 FreezeWire uses **Attestcoin readability** so Creditcoin CC3 can inherit a real Ethereum mainnet Circle USDC `Blacklisted` / `UnBlacklisted` fact **without** trusting a backend oracle. Eligibility moves only through permissionless `submitProof` → BlockProver `0x0FD2` → consumer checks → `EligibilityLedger`. There is **no** `setStatus` / `setRestricted`.
@@ -23,9 +22,9 @@ FreezeWire uses **Attestcoin readability** so Creditcoin CC3 can inherit a real 
 
 ## 2. chainKey
 
-On **CC3 testnet**, Ethereum mainnet = Attestcoin **chainKey `3`** (Sepolia = `1`).  
-`chainKey` is **not** EVM `chainId`. FreezeWire expects `3`; wrong key → `WrongChainKey`.  
-CC3 mainnet (mainnet ETH = key `1`) is **out of scope** for this demo.
+On **CC3 testnet**, Ethereum mainnet = Attestcoin **chainKey `3`** (Sepolia = `1`).
+`chainKey` is **not** EVM `chainId`. FreezeWire expects `3`; wrong key → `WrongChainKey`.
+CC3 mainnet (mainnet ETH = key `1`) is **out of scope** for the current public deploy.
 
 ---
 
@@ -37,14 +36,14 @@ Proof Builder (CC3 testnet): `https://proof-gen-api.cc3-testnet.creditcoin.netwo
 GET /api/v1/proof-by-tx/3/0xc9edfdbb67b48f26822d8769f63cb890599d98dec539f7f76b92edcc8a2ff787
 ```
 
-Also: `/api/v1/proof/{chain_key}/{header_number}/{tx_index}`, `/api/v1/attested-height/{chain_key}`, `/api/v1/health`.  
+Also: `/api/v1/proof/{chain_key}/{header_number}/{tx_index}`, `/api/v1/attested-height/{chain_key}`, `/api/v1/health`.
 Worker maps this to `GET /v1/prove/{tx}` (untrusted transport only).
 
 ---
 
 ## 4. Proof structure
 
-Payload includes `chainKey`, `headerNumber`, `txIndex` (informational), `txBytes` (encoded tx+receipt), `merkleProof` (`root` + `siblings[{hash,isLeft}]`), `continuityProof` (`lowerEndpointDigest` + `roots[]`).  
+Payload includes `chainKey`, `headerNumber`, `txIndex` (informational), `txBytes` (encoded tx+receipt), `merkleProof` (`root` + `siblings[{hash,isLeft}]`), `continuityProof` (`lowerEndpointDigest` + `roots[]`).
 On-chain **txIndex is recovered from Merkle `isLeft` bits**, not trusted from the API field. Empty `txBytes` must not be submitted.
 
 Demo evidence (public artifact): height `25705174`, txIndex `18`, siblings `9`, continuity roots `27`.
@@ -53,7 +52,7 @@ Demo evidence (public artifact): height `25705174`, txIndex `18`, siblings `9`, 
 
 ## 5. Verification
 
-ASC calls BlockProver at `0x0000000000000000000000000000000000000FD2` via **`verifyAndEmit`** (inclusion + continuity; emits `TransactionVerified` for explorers).  
+ASC calls BlockProver at `0x0000000000000000000000000000000000000FD2` via **`verifyAndEmit`** (inclusion + continuity; emits `TransactionVerified` for explorers).
 `false` / revert → `ProofRejected`; no ledger write. Precompile does **not** alone authorize eligibility.
 
 ---
@@ -66,14 +65,14 @@ Official rule: BlockProver does **not** prove the source tx succeeded. FreezeWir
 
 ## 7. Emitter validation
 
-After status, walk receipt logs; keep only `log.address == expectedEmitter`.  
+After status, walk receipt logs; keep only `log.address == expectedEmitter`.
 `expectedEmitter` is **constructor-immutable** Circle USDC (ADR-0016). Impostor tokens emitting `Blacklisted` are skipped.
 
 ---
 
 ## 8. Event validation
 
-Keep log iff `topics[0]` is Circle `Blacklisted` or `UnBlacklisted`.  
+Keep log iff `topics[0]` is Circle `Blacklisted` or `UnBlacklisted`.
 Indexed account = `topics[1]`. Issuer `Paused` (CEL’s object) must **not** bind. Decoy logs in the same receipt are ignored.
 
 ---
@@ -90,7 +89,7 @@ Application-side processed map (Model A / ADR-0017): after successful verify + s
 
 ## 10. Freshness (window)
 
-Application `[minHeight, maxHeight]`; **`(0, 0)` = unbounded** on the live demo deploy (disclosed). Production should bound age. Continuity gas grows with lag.
+Application `[minHeight, maxHeight]`; **`(0, 0)` = unbounded** on the live testnet deploy (disclosed). Production should bound age. Continuity gas grows with lag.
 
 ---
 

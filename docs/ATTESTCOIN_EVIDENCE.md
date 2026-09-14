@@ -1,6 +1,6 @@
 # Attestcoin evidence (live verified facts)
 
-Public-only public facts. Prefer this file + `deployments/demo-evidence-public.json` over chat claims.  
+Public-only facts for auditors and integrators. Prefer this file + `deployments/demo-evidence-public.json` over chat claims.
 Labels: **VERIFIED** (artifact / observed), **DOES NOT PROVE**, **REMOVAL TEST**.
 
 ---
@@ -27,7 +27,7 @@ Labels: **VERIFIED** (artifact / observed), **DOES NOT PROVE**, **REMOVAL TEST**
 | EligibilityLedger | `0xde64d5037cA820D4aDFa703C4FaF5451be840C9d` |
 | GatedCreditLine | `0xB04fFca20e0a992474E6AD501A061973dC9Ed340` |
 
-Deploy block: `5479278` · window `minHeight=0`, `maxHeight=0` (unbounded — disclosed demo default).
+Deploy block: `5479278` · window `minHeight=0`, `maxHeight=0` (unbounded — disclosed testnet default).
 
 ---
 
@@ -65,7 +65,7 @@ Proof Builder (CC3 testnet): `GET /api/v1/proof-by-tx/3/{demoTx}` — Phase 3 pa
 
 ## Removal test (load-bearing)
 
-**If Attestcoin / BlockProver `0x0FD2` is removed, FreezeWire cannot move an address to `RESTRICTED`.**  
+**If Attestcoin / BlockProver `0x0FD2` is removed, FreezeWire cannot move an address to `RESTRICTED`.**
 There is no `setStatus`, no eligibility database, and no worker privilege that can invent a blacklist. Gated credit therefore cannot inherit Circle’s flag without a proof the precompile accepts.
 
 ---

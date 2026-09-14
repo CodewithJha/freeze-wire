@@ -5,4 +5,4 @@
 
 ## Decision
 
-Judge UI is React + Vite + viem. Untrusted presentation only.
+Demo UI is React + Vite + viem. Untrusted presentation only.

@@ -57,5 +57,5 @@ contracts/broadcast/**/run-latest.json
 deployments/*.json
 !deployments/*.example.json
 !deployments/cc3-testnet.example.json
-# Public-only evidence (addresses + txs — no keys); safe to commit for reviewers
+# Public-only evidence (addresses + txs — no keys); safe to commit for public auditors
 !deployments/*-public.json

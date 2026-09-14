@@ -1,6 +1,6 @@
 # Source of truth
 
-After Gate 5A, these documents — not chat history, not prior `freezewire/` code — are the implementation contract.
+After the documentation baseline, these documents — not chat history, not prior `freezewire/` code — are the implementation contract.
 
 | Layer | Document | Question it answers |
 |---|---|---|
@@ -48,4 +48,4 @@ IDs live in `REQUIREMENTS.md` (`FR-###`, `NFR-###`, `SEC-###`, `INT-###`, `DEMO-
 4. Architecture / technical specs
 5. Development plan (schedule yields to correctness)
 
-If you find a conflict, fix the docs before writing code. Gate 5A already ran a consistency audit; later phases must re-run it.
+If you find a conflict, fix the docs before writing code. The documentation baseline already ran a consistency audit; later phases must re-run it.

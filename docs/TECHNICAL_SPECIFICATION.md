@@ -90,10 +90,10 @@ Every boundary maps to a typed error. Worker HTTP uses the error catalog in `API
 |---|---|
 | `local` | Foundry / Anvil, mocked `0x0FD2` |
 | `test` | CI unit tests |
-| `cc3-testnet` | Demo deploy + demo (**staging analog**) |
+| `cc3-testnet` | Public deploy + demo (**staging analog**) |
 | `cc3-mainnet` | Documented only; not used |
 
-There is no separate “production” FreezeWire in this demo. `cc3-testnet` is the demo environment.
+There is no separate production FreezeWire deployment yet. `cc3-testnet` is the demo environment.
 
 ### Observability
 

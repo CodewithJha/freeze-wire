@@ -8,7 +8,7 @@ Never promote ASSUMPTION to FACT.
 
 - FreezeWire is an independent Git repository at the FreezeWire repository root with its own history. It is not nested in Kaggriculture and does not use Kaggriculture’s Git. A dedicated remote is not claimed (none configured at this audit).
 - Historical (reset): the Kaggriculture project directory workspace had **no commits**; abandoned code was untracked `freezewire/`. That nested layout is not current (`PROJECT_RESET.md`, ADR-0001 amended).
-- Project deadline **13 Sep 2026 23:59 ET** (prior gates + mentor brief).
+- Ship against product/security invariants; schedule is subordinate to correctness.
 - Attestcoin docs: BlockProver `0x0FD2`; does not check receipt success; ASC must check status `0x1`.
 - CC3 testnet: Ethereum mainnet chainKey **3**, Sepolia **1**; Proof Builder `https://proof-gen-api.cc3-testnet.creditcoin.network/`; decoder `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`; ChainInfo `0x0fd3`.
 - CC3 mainnet: Ethereum mainnet chainKey **1** (different table).
@@ -26,7 +26,7 @@ Never promote ASSUMPTION to FACT.
 - Freshness window `0,0` (unbounded) for the demo so the August 2026 tx is admissible.
 - Default LTV 50% is enough for a demo credit line.
 - Localhost-only relay is enough to limit gas grief.
-- ~~Mentor can fund a CC3 wallet before Phase 8.~~ **Superseded:** Phase 8 deploy completed (see FACT / Live deploy note below).
+- ~~A funded CC3 wallet was required before Phase 8.~~ **Superseded:** Phase 8 deploy completed (see FACT / Live deploy note below).
 - `txIndex` recovered from Merkle `isLeft` path matches Gluwa / `0x0FD2.calculateTxIndex` (FACT this Phase 3 pass: demo siblings recover 18, precompile returns `0x12`).
 - Marking replay after a successful verify+receipt with no matching logs, **without reverting**, is the EVM-correct burn (ADR-0017). The prior “mark then revert NoMatchingEvent” wording was contradictory with the EVM.
 - MAX_LOGS cap 64 is enough for USDC blacklist receipts.
@@ -38,7 +38,7 @@ Never promote ASSUMPTION to FACT.
 - `prover.cc3-testnet` and `proof-gen-api.cc3-testnet` are the same service (identical OpenAPI size this pass).
 - Attestation lag is minutes (competitor READMEs + worker docs).
 - `verifyAndEmit` is better for demo than `verify`.
-- CEL-style never-gate-exits is what judges will expect after CEL’s writeup.
+- CEL-style never-gate-exits is what auditors will expect after CEL’s writeup.
 
 ## Observed in Phase 3 (2026-09-10, not fabricated)
 
@@ -63,18 +63,18 @@ Supersedes the Phase 3 “no funded deploy” row and the historical Phase 8 BLO
 
 - EIP-1559 vs `--legacy` for future CC3 broadcasts (worker prefers provider fee estimation; not hardcoded prices).
 - Owner can still retune `expectedChainKey` / height window post-deploy (operational residual; emitter immutable). Documented in SECURITY_EVIDENCE.
-- packaging platform **Submit** / demo video / deck completeness is a **human submission** residual, not a protocol BLOCKER.
+- Demo video / deck completeness (if desired) is optional, not a protocol BLOCKER.
 
 ## BLOCKER
 
 - ~~**Funded CC3 testnet deployer key** for Phase 8 on-chain Restricted event.~~ **SUPERSEDED** — Phase 8 complete; live Restricted evidenced.
-- optional platform packaging (video/deck/Submit) remains a **human action** before the project deadline — not a code/deploy blocker.
+- No remaining packaging blocker for the open-source release — protocol ship is independent of optional demo/comms materials.
 
 ## Constraints
 
-- ~3 days after this gate
+- Prefer short iteration cycles; correctness over schedule
 - No writability
 - No real USDC on CTC
 - No Credal
 - Do not modify Kaggriculture (separate repository; out of this workspace)
-- Do not implement application code in Gate 5A / this documentation correction gate
+- Do not implement application code during the documentation baseline pass

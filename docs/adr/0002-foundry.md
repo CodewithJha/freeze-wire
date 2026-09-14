@@ -17,4 +17,4 @@ Hardhat: richer JS tooling, slower tight test loops, extra TS glue for the same 
 
 ## Why rejected
 
-Project calendar favors `forge test` speed and official-example alignment.
+Prefer `forge test` speed and official-example alignment.

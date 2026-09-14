@@ -1,19 +1,19 @@
-# 90+ change plan (second-stage escalation)
+# Improvement plan (post-baseline escalation)
 
-Ranked gaps from the 6 parallel audits after the ~84 tech baseline.
+Ranked gaps from parallel audits after the ~84 tech baseline.
 **Rule:** IMPLEMENT high ROI / low risk only. Owner/window/CEI = **DOCUMENT ONLY** (no live redeploy).
 
 Labels: **IMPLEMENT** · **DOCUMENT ONLY** · **SKIP**
 
-| Priority | Change | Score gain (EST) | Risk | Effort | Implement? |
+| Priority | Change | Impact (EST) | Risk | Effort | Implement? |
 |---:|---|---:|---|---|---|
-| 1 | Commit public evidence JSON (`*-public.json`) + fix “gitignored” docs | +1–2 packaging | Low | S | **IMPLEMENT** |
+| 1 | Commit public evidence JSON (`*-public.json`) + fix “gitignored” docs | +1–2 evidence clarity | Low | S | **IMPLEMENT** |
 | 2 | README Worker badge 33→current + FE Vitest honesty tests + CI | +1–2 testing/FE | Low | M | **IMPLEMENT** |
 | 3 | Backend bounded PB/RPC retries + rate-limit prune + Retry-After | +0.5–1 reliability | Low | S | **IMPLEMENT** |
 | 4 | Discover: reject one-sided unbounded eth_getLogs | +0.5 reliability/sec | Low | S | **IMPLEMENT** |
 | 5 | Request lifecycle logs (`requestId`, sanitized) | +0.5 ops | Low | S | **IMPLEMENT** |
 | 6 | Named Foundry cases: invalid Merkle sibling / corrupted continuity | +0.5 security evidence | Low | S | **IMPLEMENT** |
-| 7 | Upgrade `SECURITY_EVIDENCE.md` threat matrix (input/expected/actual) | +0.5 judge clarity | None | S | **IMPLEMENT** |
+| 7 | Upgrade `SECURITY_EVIDENCE.md` threat matrix (input/expected/actual) | +0.5 auditor clarity | None | S | **IMPLEMENT** |
 | 8 | Document unbounded window + optional live `setWindow` ops note | +0.5 honesty | Ops if executed | S | **DOCUMENT ONLY** |
 | 9 | Owner-tunable `setExpectedChainKey` / `setWindow` → immutable | +1–2 security | **Redeploy / evidence loss** | L | **DOCUMENT ONLY** |
 | 10 | Bound live proof window via `setWindow` | +0.5–1 freshness | Ops key + demo break risk | M | **DOCUMENT ONLY** (prefer docs) |
@@ -21,7 +21,6 @@ Labels: **IMPLEMENT** · **DOCUMENT ONLY** · **SKIP**
 | 12 | Full continuous indexer | +1 scalability narrative | Scope creep | XL | **SKIP** |
 | 13 | Playwright e2e wallet flow | +1 demo confidence | Flaky / time | L | **SKIP** (unless free) |
 | 14 | Fake live ELIGIBLE→RESTRICTED on demo account | — | Honesty break | — | **SKIP** |
-| 15 | packaging submit + deck PDF + demo video | +8–15 overall | Human | — | **HUMAN** |
 
 ## Owner / window / CEI (DOCUMENT ONLY)
 
@@ -34,8 +33,8 @@ Labels: **IMPLEMENT** · **DOCUMENT ONLY** · **SKIP**
 
 ## Done in this push
 
-Packaging evidence · badge sync · SECURITY_EVIDENCE upgrade · backend retries/prune/discover/logs · Foundry named ProofRejected cases · frontend Vitest honesty · fresh final audit.
+Committed public evidence · badge sync · SECURITY_EVIDENCE upgrade · backend retries/prune/discover/logs · Foundry named ProofRejected cases · frontend Vitest honesty · fresh technical audit.
 
 ## Explicit non-goals
 
-No redeploy · no `setStatus` · no CEI rewrite · no Model A replay change · no packaging submit claim.
+No redeploy · no `setStatus` · no CEI rewrite · no Model A replay change.

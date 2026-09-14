@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "FreezeWire readability worker (Phase 4 HTTP API — not an eligibility authority)",
+  "description": "FreezeWire readability worker (HTTP API — not an eligibility authority)",
   "engines": {
     "node": ">=20"
   },

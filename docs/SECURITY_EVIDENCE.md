@@ -1,6 +1,6 @@
 # Security evidence (verified attack matrix)
 
-Judge-facing map from threats → attack input → expected → actual → tests.
+Auditor-facing map from threats → attack input → expected → actual → tests.
 Labels: **VERIFIED** (Foundry / worker / live), **RESIDUAL** (accepted / disclosed), **OUT OF SCOPE**.
 
 Do not invent attacks or claim coverage without a linked test.
@@ -57,11 +57,11 @@ If a funded **owner** key is available in a locked-down shell (never print the k
 3. Call `BlacklistVerifier.setWindow(min, max)` once; verify `OutsideWindow` for stale heights in Foundry first.
 4. Record public tx hash in evidence — **do not** commit private keys.
 
-This push **does not** perform that call (avoid ops risk mid-submission).
+This push **does not** perform that call (avoid ops risk while updating evidence artifacts).
 
 ---
 
-## Pre-submission red-team (re-verified)
+## Red-team re-verify
 
 Read-only pass confirmed: **no exploitable Attestcoin → ledger → credit-line bypass**. Restricted extractive ops still require a newer proven Circle `UnBlacklisted` (or never Restricted). Owner/window/CEI remain residuals only. Matrix rows above re-confirmed against named Foundry / backend tests — update as re-verify, not as a new finding.
 

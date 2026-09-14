@@ -3,7 +3,7 @@
 **Date:** 2026-09-10  
 **Current workspace (confirmed):** the FreezeWire repository root  
 **Historical reset workspace:** the Kaggriculture project directory (Kaggriculture). FreezeWire is **not** nested there now.  
-**Operator:** Gate 5A documentation reset (no application implementation)
+**Operator:** Documentation baseline reset (no application implementation)
 
 This file records the clean reset that removed the abandoned FreezeWire implementation. It is the audit trail for “what was here, what was destroyed, what was kept,” plus the later extraction into a standalone repository. Sections below labeled **historical** describe the Kaggriculture workspace at reset time; they are not the current FreezeWire layout.
 
@@ -25,7 +25,7 @@ Git revert was **not available**. There was no commit to roll back.
 
 ### Abandoned FreezeWire implementation
 
-Path: `kaggriculture/freezewire/` (no hyphen). Created 2026-09-10 by a Gate 5 implementation run that the mentor **stopped**. Treat that stop as intentional. That run is **not** resumed.
+Path: `kaggriculture/freezewire/` (no hyphen). Created 2026-09-10 by an abandoned implementation run that was **stopped**. Treat that stop as intentional. That run is **not** resumed.
 
 Contents (implementation — removed):
 
